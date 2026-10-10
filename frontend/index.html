@@ -1,0 +1,23 @@
+<!doctype html>
+<!--
+  Nombre: index.html
+  Descripción: Documento HTML de la SPA. Incluye Content-Security-Policy para mitigar XSS y lang="es" (accesibilidad).
+  Fecha de creación: 2026-10-07
+  Fecha de actualización: 2026-10-07
+  Autor: Equipo Ferretería
+  Versión: 1.0.0
+-->
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy"
+          content="default-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' http://localhost:8080; frame-ancestors 'none'" />
+    <meta name="referrer" content="no-referrer" />
+    <title>Inventario Ferretería</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

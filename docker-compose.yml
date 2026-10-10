@@ -1,0 +1,37 @@
+######################################################################
+# Nombre: docker-compose.yml
+# Descripción: Orquestación de producción/pruebas: PostgreSQL, backend y frontend. Los secretos se leen del archivo .env (no versionado).
+# Fecha de creación: 2026-10-07
+# Fecha de actualización: 2026-10-07
+# Autor: Equipo Ferretería
+# Versión: 1.0.0
+######################################################################
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ferreteria_db
+      POSTGRES_USER: ${DB_USER:-ferreteria}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?defina DB_PASSWORD en .env}
+    volumes: [dbdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ferreteria} -d ferreteria_db"]
+      interval: 5s
+      retries: 10
+  backend:
+    build: { context: ., dockerfile: backend/Dockerfile }
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/ferreteria_db?stringtype=unspecified
+      DB_USER: ${DB_USER:-ferreteria}
+      DB_PASSWORD: ${DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET (>=32 caracteres) en .env}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8081}
+      DEMO_PASSWORD: ${DEMO_PASSWORD:-}
+    depends_on: { db: { condition: service_healthy } }
+    ports: ["8080:8080"]
+  frontend:
+    build: { context: ., dockerfile: frontend/Dockerfile }
+    depends_on: [backend]
+    ports: ["8081:8080"]
+volumes:
+  dbdata:

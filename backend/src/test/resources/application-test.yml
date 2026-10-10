@@ -1,0 +1,20 @@
+######################################################################
+# Nombre: application-test.yml
+# Descripción: Perfil de pruebas: secreto JWT de prueba y bloqueo de login corto; la base la aporta Testcontainers.
+# Fecha de creación: 2026-10-07
+# Fecha de actualización: 2026-10-07
+# Autor: Equipo Ferretería
+# Versión: 1.0.0
+######################################################################
+app:
+  jwt:
+    secret: secreto-de-pruebas-con-mas-de-treinta-y-dos-caracteres
+    expiration-minutes: 30
+  security:
+    max-login-attempts: 3
+    lock-minutes: 15
+  cors:
+    allowed-origins: http://localhost:5173
+spring:
+  jpa:
+    show-sql: false

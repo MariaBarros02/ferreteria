@@ -1,0 +1,68 @@
+######################################################################
+# Nombre: application.yml
+# Descripción: Configuración base de Spring Boot (datasource, JPA, Flyway, JWT, CORS, OpenAPI, i18n). Se parametriza por variables de entorno.
+# Fecha de creación: 2026-10-07
+# Fecha de actualización: 2026-10-07
+# Autor: Equipo Ferretería
+# Versión: 1.0.0
+######################################################################
+spring:
+  application:
+    name: inventario-backend
+  datasource:
+    # stringtype=unspecified permite escribir cadenas en columnas ENUM nativas de PostgreSQL
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/ferreteria_db?stringtype=unspecified}
+    username: ${DB_USER:postgres}
+    password: ${DB_PASSWORD:postgres}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: none          # el esquema lo gestiona Flyway (database/migrations)
+    properties:
+      hibernate.jdbc.time_zone: UTC
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+  messages:
+    basename: messages
+    encoding: UTF-8
+    fallback-to-system-locale: false
+  jackson:
+    default-property-inclusion: non_null
+    deserialization:
+      fail-on-unknown-properties: true   # rechaza campos inesperados (mass assignment)
+
+server:
+  port: 8080
+  error:
+    include-message: never
+    include-stacktrace: never
+
+app:
+  jwt:
+    # OBLIGATORIO en producción: mínimo 32 caracteres. Nunca versionar el valor real.
+    secret: ${JWT_SECRET:}
+    expiration-minutes: ${JWT_EXPIRATION_MINUTES:30}
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:5173}
+  security:
+    max-login-attempts: ${MAX_LOGIN_ATTEMPTS:5}
+    lock-minutes: ${LOCK_MINUTES:15}
+  bootstrap:
+    demo-password: ${DEMO_PASSWORD:}   # si se define, reemplaza 'hash_demo' del seed por BCrypt(demo-password)
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+  api-docs:
+    path: /v3/api-docs
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true

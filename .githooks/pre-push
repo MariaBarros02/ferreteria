@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+######################################################################
+# Nombre: pre-push
+# Descripción: Hook pre-push: ejecuta compilación y pruebas completas antes de publicar; si fallan, el push se aborta.
+# Fecha de creación: 2026-10-07
+# Fecha de actualización: 2026-10-07
+# Autor: Equipo Ferretería
+# Versión: 1.0.0
+######################################################################
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+SALTAR_BACKEND_IT="${SALTAR_BACKEND_IT:-0}"
+./scripts/build-test-frontend.sh
+if [ "$SALTAR_BACKEND_IT" = "1" ]; then (cd backend && mvn -B -ntp -q test); else ./scripts/build-test-backend.sh; fi

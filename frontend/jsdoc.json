@@ -1,0 +1,6 @@
+{
+  "//": "Nombre: jsdoc.json | Descripción: Configuración de JSDoc para generar la documentación del frontend | Creación: 2026-10-07 | Actualización: 2026-10-07 | Autor: Equipo Ferretería | Versión: 1.0.0",
+  "source": { "include": ["src"], "exclude": ["src/__tests__"], "includePattern": ".+\\.(js|jsx)$" },
+  "opts": { "destination": "docs-jsdoc", "recurse": true },
+  "plugins": []
+}

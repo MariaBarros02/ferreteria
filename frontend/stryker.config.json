@@ -1,0 +1,7 @@
+{
+  "//": "Nombre: stryker.config.json | Descripción: Pruebas de mutación del frontend sobre validaciones y utilidades | Creación: 2026-10-07 | Actualización: 2026-10-07 | Autor: Equipo Ferretería | Versión: 1.0.0",
+  "testRunner": "vitest",
+  "mutate": ["src/validation/**/*.js", "src/utils/**/*.js", "src/auth/session.js"],
+  "reporters": ["clear-text", "html"],
+  "thresholds": { "high": 85, "low": 70, "break": 60 }
+}

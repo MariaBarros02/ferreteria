@@ -1,0 +1,21 @@
+/*
+ * Nombre: styles.css
+ * Descripción: Estilos globales mínimos: enlace "saltar al contenido" visible al enfocar (accesibilidad WCAG 2.4.1).
+ * Fecha de creación: 2026-10-07
+ * Fecha de actualización: 2026-10-07
+ * Autor: Equipo Ferretería
+ * Versión: 1.0.0
+ */
+.saltar {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  background: #fff;
+  color: #0b5fa5;
+  padding: 12px 16px;
+  z-index: 2000;
+}
+.saltar:focus {
+  left: 8px;
+  top: 8px;
+}

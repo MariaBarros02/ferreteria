@@ -1,0 +1,31 @@
+{
+  "//": "Nombre: metricas.json | Descripción: Definición declarativa de métricas de desempeño, calidad y producción (fuente, fórmula, umbrales, ámbito) | Creación: 2026-10-07 | Actualización: 2026-10-07 | Autor: Equipo Ferretería | Versión: 1.0.0",
+  "ventana_dias": 30,
+  "metricas": [
+    { "id": "M01", "nombre": "Tasa de éxito del pipeline", "unidad": "%", "ambito": "sistema", "sentido": "mayor_mejor",
+      "fuente": "ci", "formula": "corridas_ok / corridas_totales * 100", "verde": 90, "amarillo": 75 },
+    { "id": "M02", "nombre": "Errores abiertos", "unidad": "issues", "ambito": "sistema", "sentido": "menor_mejor",
+      "fuente": "taiga:issues", "formula": "count(issues con is_closed = false)", "verde": 5, "amarillo": 10 },
+    { "id": "M03", "nombre": "Tiempo medio de resolución de errores (MTTR, mediana)", "unidad": "horas", "ambito": "equipo", "sentido": "menor_mejor",
+      "fuente": "taiga:issues", "formula": "mediana(finished_date - created_date) de issues cerradas en la ventana", "verde": 24, "amarillo": 72 },
+    { "id": "M04", "nombre": "Antigüedad del error abierto más viejo", "unidad": "días", "ambito": "sistema", "sentido": "menor_mejor",
+      "fuente": "taiga:issues", "formula": "max(hoy - created_date) de issues abiertas", "verde": 7, "amarillo": 14 },
+    { "id": "M05", "nombre": "Tareas cerradas por persona", "unidad": "tareas", "ambito": "individual", "sentido": "mayor_mejor",
+      "fuente": "taiga:tasks", "formula": "count(tareas cerradas por assigned_to en la ventana)", "verde": 8, "amarillo": 4 },
+    { "id": "M06", "nombre": "Tiempo de ciclo de tareas (mediana)", "unidad": "días", "ambito": "individual", "sentido": "menor_mejor",
+      "fuente": "taiga:tasks", "formula": "mediana(finished_date - created_date) por assigned_to", "verde": 3, "amarillo": 7 },
+    { "id": "M07", "nombre": "Errores resueltos por persona", "unidad": "issues", "ambito": "individual", "sentido": "mayor_mejor",
+      "fuente": "taiga:issues", "formula": "count(issues cerradas por assigned_to en la ventana)", "verde": 3, "amarillo": 1 },
+    { "id": "M08", "nombre": "Errores escapados a producción", "unidad": "issues", "ambito": "sistema", "sentido": "menor_mejor",
+      "fuente": "taiga:issues", "formula": "count(issues con etiqueta 'produccion' creadas en la ventana)", "verde": 0, "amarillo": 2 },
+    { "id": "M09", "nombre": "Cobertura de líneas del backend (JaCoCo)", "unidad": "%", "ambito": "sistema", "sentido": "mayor_mejor",
+      "fuente": "archivo:backend/target/site/jacoco/jacoco.xml", "formula": "covered / (covered + missed) de LINE", "verde": 80, "amarillo": 65 },
+    { "id": "M10", "nombre": "Cobertura de líneas del frontend (Vitest)", "unidad": "%", "ambito": "sistema", "sentido": "mayor_mejor",
+      "fuente": "archivo:frontend/coverage/coverage-summary.json", "formula": "total.lines.pct", "verde": 80, "amarillo": 65 },
+    { "id": "M11", "nombre": "Puntaje de mutación del backend (PIT)", "unidad": "%", "ambito": "sistema", "sentido": "mayor_mejor",
+      "fuente": "archivo:backend/target/pit-reports/**/mutations.xml", "formula": "KILLED / total de mutaciones * 100", "verde": 70, "amarillo": 55 },
+    { "id": "M12", "nombre": "Duración media del pipeline", "unidad": "minutos", "ambito": "sistema", "sentido": "menor_mejor",
+      "fuente": "ci", "formula": "media(segundos) / 60", "verde": 15, "amarillo": 30 }
+  ],
+  "alertas": { "crear_issue_en_rojo": true, "etiqueta": "metrica" }
+}

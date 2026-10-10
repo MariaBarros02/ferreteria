@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+######################################################################
+# Nombre: pre-commit
+# Descripción: Hook pre-commit: bloquea secretos evidentes y ejecuta las pruebas unitarias rápidas del frontend si cambió.
+# Fecha de creación: 2026-10-07
+# Fecha de actualización: 2026-10-07
+# Autor: Equipo Ferretería
+# Versión: 1.0.0
+######################################################################
+set -euo pipefail
+staged="$(git diff --cached --name-only)"
+if echo "$staged" | grep -E '(^|/)\.env$' >/dev/null; then echo "!! No se permite versionar .env"; exit 1; fi
+if git diff --cached -U0 | grep -E '^\+.*(PRIVATE KEY|JWT_SECRET=[^c<]|password\s*=\s*"[^"]{6,}")' >/dev/null; then
+  echo "!! Posible secreto en el commit. Revíselo."; exit 1; fi
+if echo "$staged" | grep -q '^frontend/src'; then (cd frontend && npx vitest run --reporter=dot) ; fi

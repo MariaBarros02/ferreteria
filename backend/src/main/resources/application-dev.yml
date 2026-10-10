@@ -1,0 +1,16 @@
+######################################################################
+# Nombre: application-dev.yml
+# Descripción: Perfil de desarrollo: secreto JWT de ejemplo y contraseña demo para los usuarios del seed (NO usar en producción).
+# Fecha de creación: 2026-10-07
+# Fecha de actualización: 2026-10-07
+# Autor: Equipo Ferretería
+# Versión: 1.0.0
+######################################################################
+app:
+  jwt:
+    secret: ${JWT_SECRET:dev-secret-solo-para-desarrollo-cambiar-123456}
+  bootstrap:
+    demo-password: ${DEMO_PASSWORD:Ferreteria2026*}
+logging:
+  level:
+    com.ferreteria: DEBUG
