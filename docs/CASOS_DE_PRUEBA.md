@@ -31,7 +31,7 @@ La tabla de casos automatizados se genera con `python3 scripts/listar_casos.py` 
 ## Casos automatizados
 
 <!-- CASOS:INICIO -->
-Total de casos automatizados: **275**.
+Total de casos automatizados: **293**.
 
 ### Unitaria
 
@@ -63,6 +63,7 @@ Total de casos automatizados: **275**.
 | UT-COM-08 | reintento de la misma recepción (misma clave) no vuelve a sumar inventario | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
 | UT-COM-09 | una compra anulada no admite recepciones | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
 | UT-COM-10 | no se anula una compra con mercancía recibida | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
+| UT-COM-11 | compra en USD: el costo se pacta en USD y el costo base del promedio se guarda en COP | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
 | UT-CON-01 | registrar un conteo calcula la diferencia y no modifica el inventario | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
 | UT-CON-02 | aprobar la sesión genera el ajuste por la diferencia con tipo de movimiento conteo | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
 | UT-CON-03 | rechazar la sesión no altera saldos | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
@@ -99,6 +100,12 @@ Total de casos automatizados: **275**.
 | UT-LOG-04 | el bloqueo es por correo y no distingue mayúsculas | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/LoginAttemptServiceTest.java` |
 | UT-LOT-01 | un lote existente no puede reingresar con otra fecha de vencimiento | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/SoporteServiciosTest.java` |
 | UT-LOT-02 | salida sin lote indicado: primero existencia sin lote, luego lotes vencidos y FEFO | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/SoporteServiciosTest.java` |
+| UT-MON-01 | la moneda funcional (COP) siempre aplica tasa 1 y no requiere tasa registrada | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/MonedaServiceTest.java` |
+| UT-MON-02 | la tasa vigente se consulta con la fecha del negocio (America/Bogota) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/MonedaServiceTest.java` |
+| UT-MON-03 | sin tasa vigente o con la moneda inactiva no se emiten documentos (422) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/MonedaServiceTest.java` |
+| UT-MON-04 | registrar tasa: se audita; no se admiten fechas futuras ni tasas para COP | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/MonedaServiceTest.java` |
+| UT-MON-05 | conversión entre dos monedas extranjeras pasa por COP y redondea a los decimales de destino | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/MonedaServiceTest.java` |
+| UT-MON-06 | la moneda funcional no se desactiva; una extranjera sí, con auditoría | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/MonedaServiceTest.java` |
 | UT-PRE-01 | propuesta por recargo: costo $12.000 × 1,30 = $15.600 y no queda vigente | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/PrecioServiceTest.java` |
 | UT-PRE-02 | sin costo promedio no se calcula (422); el precio manual exige justificación | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/PrecioServiceTest.java` |
 | UT-PRE-03 | aprobar vuelve vigente el precio y registra aprobador y fechas | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/PrecioServiceTest.java` |
@@ -156,6 +163,8 @@ Total de casos automatizados: **275**.
 | UT-VEN-16 | producto por lote: las unidades de lotes vencidos no se venden (409 STOCK_VENCIDO) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/VentaServiceTest.java` |
 | UT-VEN-17 | garantía: la línea registra el fin de garantía según los meses del producto | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/VentaServiceTest.java` |
 | UT-VEN-18 | venta con reserva: descuenta del reservado y libera el sobrante a disponible (RN-03) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/VentaServiceTest.java` |
+| UT-VEN-19 | venta en USD: precio convertido con la tasa vigente, importes en USD y equivalente en COP | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/VentaServiceTest.java` |
+| UT-VEN-20 | sin tasa vigente para la moneda se rechaza (422) sin tocar inventario ni factura | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/VentaServiceTest.java` |
 
 ### Unitaria / Componente (frontend)
 
@@ -186,6 +195,13 @@ Total de casos automatizados: **275**.
 | FE-LOG-04 | login correcto guarda la sesión persistente y navega al inicio | Vitest + Testing Library | `frontend/src/__tests__/LoginPage.test.jsx` |
 | FE-LOG-05 | credenciales inválidas muestran alerta accesible y no guardan sesión | Vitest + Testing Library | `frontend/src/__tests__/LoginPage.test.jsx` |
 | FE-LOG-06 | el botón mostrar/ocultar contraseña alterna el tipo del campo | Vitest + Testing Library | `frontend/src/__tests__/LoginPage.test.jsx` |
+| FE-MON-01 | precio COP → moneda con 4 decimales, equivalente COP con 2 y formato por código ISO | Vitest + Testing Library | `frontend/src/__tests__/monedas.test.jsx` |
+| FE-MON-02 | validación de tasa y código ISO | Vitest + Testing Library | `frontend/src/__tests__/monedas.test.jsx` |
+| FE-MON-03 | al elegir USD los precios y el total se muestran en USD, con equivalente en COP, y se envía la moneda | Vitest + Testing Library | `frontend/src/__tests__/monedas.test.jsx` |
+| FE-MON-04 | el rol Ventas consulta tasas pero no puede registrarlas ni desactivar monedas | Vitest + Testing Library | `frontend/src/__tests__/monedas.test.jsx` |
+| FE-MON-05 | Gerencia registra una tasa: fecha futura bloqueada; valor válido se envía como número | Vitest + Testing Library | `frontend/src/__tests__/monedas.test.jsx` |
+| FE-MON-06 | el conversor muestra el resultado con las tasas usadas | Vitest + Testing Library | `frontend/src/__tests__/monedas.test.jsx` |
+| FE-MON-07 | muestra importes en USD, la tasa aplicada y el equivalente en COP | Vitest + Testing Library | `frontend/src/__tests__/monedas.test.jsx` |
 | FE-OFF-01 | sincroniza todas las páginas, guarda la fecha y se borra al cerrar sesión | Vitest + Testing Library | `frontend/src/__tests__/offline_pdf.test.js` |
 | FE-OFF-02 | busca por nombre, marca, presentación o código sin distinguir tildes ni mayúsculas | Vitest + Testing Library | `frontend/src/__tests__/offline_pdf.test.js` |
 | FE-PDF-01 | sin integración fiscal el PDF lleva la leyenda de comprobante interno | Vitest + Testing Library | `frontend/src/__tests__/offline_pdf.test.js` |
@@ -255,6 +271,7 @@ Total de casos automatizados: **275**.
 | IT-ADM-05 | conteo físico: no ajusta hasta aprobar; la aprobación genera el ajuste | JUnit 5 + Spring Test (MockMvc) + Testcontainers | `backend/src/test/java/com/ferreteria/inventario/integration/ModulosAdministrativosIT.java` |
 | IT-ADM-06 | catálogo para consulta sin conexión: paginado y solo productos activos | JUnit 5 + Spring Test (MockMvc) + Testcontainers | `backend/src/test/java/com/ferreteria/inventario/integration/ModulosAdministrativosIT.java` |
 | IT-ADM-07 | migraciones V3/V4: auditoría inmutable y nuevos tipos de movimiento disponibles | JUnit 5 + Spring Test (MockMvc) + Testcontainers | `backend/src/test/java/com/ferreteria/inventario/integration/ModulosAdministrativosIT.java` |
+| IT-ADM-08 | monedas: solo Gerencia/Administración registran tasas; venta en USD guarda importes en USD y equivalente en COP | JUnit 5 + Spring Test (MockMvc) + Testcontainers | `backend/src/test/java/com/ferreteria/inventario/integration/ModulosAdministrativosIT.java` |
 | IT-AUT-01 | credenciales correctas devuelven JWT y rol, sin hash | JUnit 5 + Spring Test (MockMvc) + Testcontainers | `backend/src/test/java/com/ferreteria/inventario/integration/AutenticacionIT.java` |
 | IT-AUT-02 | contraseña errónea → 401 con mensaje genérico | JUnit 5 + Spring Test (MockMvc) + Testcontainers | `backend/src/test/java/com/ferreteria/inventario/integration/AutenticacionIT.java` |
 | IT-AUT-03 | usuario inexistente responde igual que contraseña errónea (no enumera cuentas) | JUnit 5 + Spring Test (MockMvc) + Testcontainers | `backend/src/test/java/com/ferreteria/inventario/integration/AutenticacionIT.java` |
@@ -329,6 +346,7 @@ Total de casos automatizados: **275**.
 | E2E-FLU-04 | Ventas vende con lector de código, ve el detalle, el comprobante interno y descarga el PDF | Playwright | `frontend/e2e/flujos-operativos.spec.js` |
 | E2E-FLU-05 | no se puede devolver más de lo vendido | Playwright | `frontend/e2e/flujos-operativos.spec.js` |
 | E2E-I18N-01 | cambiar a inglés traduce la interfaz y persiste tras recargar | Playwright | `frontend/e2e/criterios-aceptacion.spec.js` |
+| E2E-MON-01 | Gerencia registra la tasa USD y Ventas factura en USD con equivalente en COP | Playwright | `frontend/e2e/flujos-operativos.spec.js` |
 | E2E-OFF-01 | sin conexión se consulta la copia local del catálogo y no se permiten operaciones | Playwright | `frontend/e2e/flujos-operativos.spec.js` |
 | E2E-PRO-01 | crear producto y encontrarlo por código; código duplicado se rechaza (RN-01) | Playwright | `frontend/e2e/criterios-aceptacion.spec.js` |
 | E2E-PRO-02 | validación de formulario: código inválido bloquea el envío y muestra el error | Playwright | `frontend/e2e/criterios-aceptacion.spec.js` |

@@ -4,7 +4,7 @@
  * Fecha de creación: 2026-10-16
  * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 package com.ferreteria.inventario.service;
 
@@ -156,14 +156,15 @@ public class ExportacionService {
     @Transactional   // no es de solo lectura: registra el evento de exportación
     public byte[] ventas(LocalDate desde, LocalDate hasta, Actor actor) {
         SXSSFWorkbook wb = Excel.libro("ventas", List.of("id", "numero_interno", "factura", "fecha_utc", "cliente",
-                "usuario", "estado", "total", "con_devoluciones"));
+                "usuario", "estado", "total_cop", "con_devoluciones", "moneda", "total_moneda"));
         Sheet s = wb.getSheet("ventas");
         int r = 1;
         for (int pagina = 0; r <= MAX_FILAS; pagina++) {
             var page = ventas.listar(new VentaConsultaService.Filtros(null, null, desde, hasta, null), pagina, LOTE);
             for (VentaResumenResponse v : page.contenido()) {
                 Excel.fila(s, r++, java.util.Arrays.asList(v.id(), v.numeroInterno(), v.numeracionDian(), v.fecha(),
-                        v.cliente(), v.usuario(), String.valueOf(v.estado()), v.total(), v.tieneDevoluciones()));
+                        v.cliente(), v.usuario(), String.valueOf(v.estado()), v.total(), v.tieneDevoluciones(), v.moneda(),
+                        v.totalMoneda()));
             }
             if (pagina + 1 >= page.totalPaginas()) {
                 break;

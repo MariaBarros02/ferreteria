@@ -32,6 +32,7 @@ import java.util.List;
  * @param descuentos obsoleto (v1.0): solo se acepta nulo o 0; use el descuento por línea
  * @param idOperacion clave de idempotencia generada por el cliente: un reintento no crea otra venta (RF-11)
  * @param observaciones observaciones
+ * @param moneda moneda del documento (ISO 4217); nula = moneda funcional COP (RF-23)
  */
 public record VentaRequest(
         @NotNull(message = "{validacion.obligatorio}") @Positive(message = "{validacion.positivo}") Long clienteId,
@@ -42,7 +43,14 @@ public record VentaRequest(
         @Size(max = 64, message = "{validacion.longitud}")
         @Pattern(regexp = Validaciones.ID_OPERACION, message = "{validacion.id.operacion}") String idOperacion,
         @Size(max = 255, message = "{validacion.longitud}")
-        @Pattern(regexp = Validaciones.SIN_HTML, message = "{validacion.sin.html}") String observaciones) {
+        @Pattern(regexp = Validaciones.SIN_HTML, message = "{validacion.sin.html}") String observaciones,
+        @Pattern(regexp = "^[A-Za-z]{3}$", message = "{validacion.moneda}") String moneda) {
+
+    /** Compatibilidad: venta en la moneda funcional (COP). */
+    public VentaRequest(Long clienteId, List<Linea> lineas, BigDecimal impuestos, BigDecimal descuentos,
+                        String idOperacion, String observaciones) {
+        this(clienteId, lineas, impuestos, descuentos, idOperacion, observaciones, null);
+    }
 
     /**
      * Constructor de compatibilidad con la versión 1.0.
@@ -53,7 +61,7 @@ public record VentaRequest(
      * @param descuentos descuentos (nulo o 0)
      */
     public VentaRequest(Long clienteId, List<Linea> lineas, BigDecimal impuestos, BigDecimal descuentos) {
-        this(clienteId, lineas, impuestos, descuentos, null, null);
+        this(clienteId, lineas, impuestos, descuentos, null, null, null);
     }
 
     /** Los importes globales manuales no se admiten: se calculan en el servidor. */

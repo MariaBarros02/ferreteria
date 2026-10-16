@@ -22,8 +22,11 @@ import com.ferreteria.inventario.domain.enums.EstadoDocumento;
  * @param estado activo o anulado
  * @param estadoRecepcion PENDIENTE, PARCIAL, RECIBIDA o ANULADA
  * @param lineas número de líneas
- * @param total total
+ * @param total total en la moneda de la compra
+ * @param moneda moneda de la compra
+ * @param totalFuncional total equivalente en COP
  */
 public record CompraResumenResponse(Long id, String numero, String proveedor, LocalDateTime fecha, EstadoDocumento estado,
-                                    String estadoRecepcion, int lineas, BigDecimal total) {
+                                    String estadoRecepcion, int lineas, BigDecimal total, String moneda,
+                                    BigDecimal totalFuncional) {
 }

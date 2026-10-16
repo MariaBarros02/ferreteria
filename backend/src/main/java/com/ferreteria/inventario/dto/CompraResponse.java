@@ -33,13 +33,17 @@ import com.ferreteria.inventario.domain.enums.TipoRastreo;
  * @param subtotal subtotal
  * @param descuentos descuentos
  * @param impuestos impuestos
- * @param total total
+ * @param total total (subtotal, descuentos, impuestos y total en la moneda de la compra)
  * @param documentos documentos de ingreso
+ * @param moneda moneda de la compra (ISO 4217)
+ * @param tasaCambio pesos colombianos por 1 unidad, pactada en la orden (1 en COP)
+ * @param totalFuncional total equivalente en COP
  */
 public record CompraResponse(Long id, String numero, Long proveedorId, String proveedor, String proveedorIdentificacion,
                              LocalDateTime fecha, EstadoDocumento estado, String estadoRecepcion, String usuario,
                              String observaciones, String motivoAnulacion, List<Linea> lineas, BigDecimal subtotal,
-                             BigDecimal descuentos, BigDecimal impuestos, BigDecimal total, List<Documento> documentos) {
+                             BigDecimal descuentos, BigDecimal impuestos, BigDecimal total, List<Documento> documentos,
+                             String moneda, BigDecimal tasaCambio, BigDecimal totalFuncional) {
 
     /**
      * Línea de compra.
@@ -57,20 +61,21 @@ public record CompraResponse(Long id, String numero, Long proveedorId, String pr
      * @param unidad presentación pedida
      * @param cantidadPresentacion cantidad en la presentación
      * @param costoPresentacion costo por presentación
-     * @param costoUnitario costo por unidad base
+     * @param costoUnitario costo por unidad base en COP (alimenta el costo promedio)
      * @param porcentajeIva IVA
      * @param porcentajeDescuento descuento
      * @param subtotal subtotal
      * @param descuento descuento
      * @param impuesto impuesto
-     * @param total total
+     * @param total total (importes de la línea en la moneda de la compra)
+     * @param costoUnitarioMoneda costo por unidad base en la moneda de la compra
      */
     public record Linea(Long id, Long productoId, String producto, String codigoBarras, String unidadBase,
                         TipoRastreo tipoRastreo, boolean tieneVencimiento, BigDecimal cantidadPedida,
                         BigDecimal cantidadRecibida, BigDecimal cantidadPendiente, String unidad,
                         BigDecimal cantidadPresentacion, BigDecimal costoPresentacion, BigDecimal costoUnitario,
                         BigDecimal porcentajeIva, BigDecimal porcentajeDescuento, BigDecimal subtotal,
-                        BigDecimal descuento, BigDecimal impuesto, BigDecimal total) { }
+                        BigDecimal descuento, BigDecimal impuesto, BigDecimal total, BigDecimal costoUnitarioMoneda) { }
 
     /**
      * Documento de ingreso.

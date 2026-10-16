@@ -1,10 +1,10 @@
 /*
  * Nombre: CompraNuevaPage.jsx
- * Descripción: Registro de orden de compra (RF-03): proveedor con búsqueda, productos con búsqueda/lector de código, cantidad y costo por presentación, IVA y descuento por línea, vista previa de importes, confirmación e idempotencia. La mercancía entra al inventario solo al recibirla.
+ * Descripción: Registro de orden de compra (RF-03, RF-23): proveedor con búsqueda, moneda del proveedor con tasa vigente, productos con búsqueda/lector de código, cantidad y costo por presentación en esa moneda, IVA y descuento por línea, vista previa de importes, confirmación e idempotencia. La mercancía entra al inventario solo al recibirla.
  * Fecha de creación: 2026-10-16
  * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 import { useMemo, useRef, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
@@ -19,11 +19,12 @@ import { useNotify } from '../../components/Notifier';
 import PageHeader from '../../components/PageHeader';
 import ProductoSelector from '../../components/ProductoSelector';
 import TerceroSelector from '../../components/TerceroSelector';
+import SelectorMoneda, { COP } from '../../components/SelectorMoneda';
 import useEnLinea from '../../hooks/useEnLinea';
 import { nuevaClaveOperacion } from '../../utils/archivos';
-import { cantidad as fmtCantidad, moneda } from '../../utils/formato';
+import { cantidad as fmtCantidad, fecha, moneda as fmtMoneda, tasaTexto } from '../../utils/formato';
 import { mensajeDeError } from '../../utils/mensajes';
-import { linea as calcularLinea, totales as sumar } from '../../utils/totales';
+import { enCop, linea as calcularLinea, totales as sumar } from '../../utils/totales';
 import { errorCantidad, errorImporte, errorPorcentaje, numero } from '../../validation/lineas';
 import { SIN_HTML } from '../../validation/schemas';
 
@@ -33,6 +34,9 @@ export default function CompraNuevaPage() {
   const navegar = useNavigate();
   const enLinea = useEnLinea();
   const [proveedor, setProveedor] = useState(null);
+  const [monedaDoc, setMonedaDoc] = useState(COP);
+  const tasa = monedaDoc.funcional ? 1 : Number(monedaDoc.tasaVigente) || 1;
+  const moneda = (n, d) => fmtMoneda(n, d, monedaDoc.codigo);
   const [lineas, setLineas] = useState([]);
   const [observaciones, setObservaciones] = useState('');
   const [intentado, setIntentado] = useState(false);
@@ -62,7 +66,7 @@ export default function CompraNuevaPage() {
     setEnviando(true);
     try {
       const c = await api.compras.crear({
-        proveedorId: proveedor.id, observaciones: observaciones.trim() || null, idOperacion: clave.current,
+        proveedorId: proveedor.id, moneda: monedaDoc.codigo, observaciones: observaciones.trim() || null, idOperacion: clave.current,
         lineas: lineas.map((l) => ({ productoId: l.producto.id, cantidad: numero(l.cantidad), ...(l.unidad ? { unidad: l.unidad } : {}),
           costoUnitario: numero(l.costoUnitario), porcentajeIva: numero(l.porcentajeIva), porcentajeDescuento: numero(l.porcentajeDescuento) })),
       });
@@ -81,6 +85,7 @@ export default function CompraNuevaPage() {
       <Paper sx={{ p: 2, mb: 2 }}>
         <TerceroSelector id="compra-proveedor" rol="proveedor" valor={proveedor} onCambio={setProveedor} requerido autoFocus
           error={intentado && !proveedor ? t('errores.obligatorio') : null} />
+        <SelectorMoneda id="compra-moneda" valor={monedaDoc} onCambio={setMonedaDoc} label={t('moneda.monedaProveedor')} />
         <ProductoSelector id="compra-producto" valor={null} onCambio={agregar} limpiarAlSeleccionar mostrarPrecio={false}
           textoAyuda={t('selector.lectorAyuda')} />
         {intentado && !lineas.length && <Typography color="error" role="alert">{t('errores.lineas')}</Typography>}
@@ -91,7 +96,7 @@ export default function CompraNuevaPage() {
                 <TableCell>{t('venta.producto')}</TableCell>
                 <TableCell sx={{ minWidth: 100 }}>{t('venta.cantidad')}</TableCell>
                 <TableCell sx={{ minWidth: 130 }}>{t('venta.presentacion')}</TableCell>
-                <TableCell sx={{ minWidth: 130 }}>{t('compra.costoUnitario')}</TableCell>
+                <TableCell sx={{ minWidth: 130 }}>{t('compra.costoUnitario')} ({monedaDoc.codigo})</TableCell>
                 <TableCell sx={{ minWidth: 90 }}>{t('venta.iva')} %</TableCell>
                 <TableCell sx={{ minWidth: 90 }}>{t('venta.descuentoPct')}</TableCell>
                 <TableCell align="right">{t('compra.total')}</TableCell>
@@ -124,7 +129,8 @@ export default function CompraNuevaPage() {
         <TextField label={t('comun.observaciones')} value={observaciones} onChange={(e) => setObservaciones(e.target.value.slice(0, 255))}
           fullWidth multiline minRows={2} margin="normal" error={Boolean(errorObs)} helperText={errorObs ? t('errores.sinHtml') : `${observaciones.length}/255`} />
         <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ sm: 'center' }} gap={2}>
-          <Typography>{t('venta.subtotal')}: {moneda(total.subtotal, 2)} · {t('venta.descuentos')}: {moneda(total.descuentos, 2)} · {t('venta.impuestos')}: {moneda(total.impuestos, 2)} · <strong>{t('compra.total')}: {moneda(total.total, 2)}</strong></Typography>
+          <Typography>{t('venta.subtotal')}: {moneda(total.subtotal, 2)} · {t('venta.descuentos')}: {moneda(total.descuentos, 2)} · {t('venta.impuestos')}: {moneda(total.impuestos, 2)} · <strong>{t('compra.total')}: {moneda(total.total, 2)}</strong>
+            {!monedaDoc.funcional && <Typography variant="caption" color="text.secondary" component="span"> · {t('moneda.equivalenteCop')} ≈ {fmtMoneda(enCop(total.total, tasa), 2)} ({tasaTexto(monedaDoc.codigo, monedaDoc.tasaVigente)}, {fecha(monedaDoc.fechaTasa)})</Typography>}</Typography>
           <Button variant="contained" disabled={!enLinea || enviando} onClick={() => { setIntentado(true); setErrorServidor(null); if (valido) setConfirmando(true); }}>{t('compra.registrar')}</Button>
         </Stack>
       </Paper>

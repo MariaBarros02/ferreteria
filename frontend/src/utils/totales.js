@@ -45,3 +45,20 @@ export function factor(producto, unidad) {
   const c = (producto.unidades || []).find((u) => u.unidadPresentacion.toLowerCase() === unidad.toLowerCase());
   return c ? Number(c.factor) : 1;
 }
+
+/**
+ * Precio unitario en la moneda del documento a partir del precio en COP (misma regla del servidor:
+ * división con 4 decimales HALF_UP). En COP (tasa 1) devuelve el mismo precio.
+ * @param {number} precioCop precio en COP
+ * @param {number} tasa pesos por unidad de la moneda
+ */
+export function precioEnMoneda(precioCop, tasa) {
+  if (precioCop === null || precioCop === undefined) return null;
+  const t = Number(tasa) || 1;
+  if (t === 1) return Number(precioCop);
+  const v = Number(precioCop) / t;
+  return Number(`${Math.round(Number(`${v}e4`))}e-4`);
+}
+
+/** Equivalente en COP de un importe en la moneda del documento (2 decimales HALF_UP). */
+export const enCop = (importe, tasa) => redondear(Number(importe || 0) * (Number(tasa) || 1));

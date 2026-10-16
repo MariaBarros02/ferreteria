@@ -41,6 +41,7 @@ const AuditoriaPage = lazy(() => import('./pages/admin/AuditoriaPage'));
 const CierresPage = lazy(() => import('./pages/admin/CierresPage'));
 const ImportacionPage = lazy(() => import('./pages/admin/ImportacionPage'));
 const UsuariosPage = lazy(() => import('./pages/admin/UsuariosPage'));
+const MonedasPage = lazy(() => import('./pages/admin/MonedasPage'));
 
 /** Indicador mientras se descarga el código de una página (carga diferida por ruta). */
 function Cargando() {
@@ -73,6 +74,7 @@ export const RUTAS = [
   ['/cierres', CierresPage, con('cierres.gestionar')],
   ['/usuarios', UsuariosPage, con('usuarios.gestionar')],
   ['/importacion', ImportacionPage, puedeImportar],
+  ['/monedas', MonedasPage, () => true],
 ];
 
 /**

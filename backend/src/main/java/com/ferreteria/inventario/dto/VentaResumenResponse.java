@@ -23,10 +23,12 @@ import java.time.LocalDateTime;
  * @param cliente nombre del cliente
  * @param usuario correo del usuario
  * @param estado estado
- * @param total total
+ * @param total total en COP
  * @param tieneDevoluciones la venta tiene devoluciones registradas
+ * @param moneda moneda del documento
+ * @param totalMoneda total en la moneda del documento
  */
 public record VentaResumenResponse(Long id, String numeroInterno, String numeracionDian, LocalDateTime fecha, Long clienteId,
                                    String cliente, String usuario, EstadoDocumento estado, BigDecimal total,
-                                   boolean tieneDevoluciones) {
+                                   boolean tieneDevoluciones, String moneda, BigDecimal totalMoneda) {
 }

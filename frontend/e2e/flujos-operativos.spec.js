@@ -1,10 +1,10 @@
 /*
  * Nombre: flujos-operativos.spec.js
- * Descripción: Pruebas E2E del flujo operativo completo (compra → recepción → precio con aprobación → venta con lector de código → comprobante PDF → devolución), navegación por rol y consulta sin conexión. Requieren backend y base de datos con los datos semilla.
+ * Descripción: Pruebas E2E del flujo operativo completo (compra → recepción → precio con aprobación → venta con lector de código → comprobante PDF → devolución), venta en moneda extranjera con tasa de cambio, navegación por rol y consulta sin conexión. Requieren backend y base de datos con los datos semilla.
  * Fecha de creación: 2026-10-16
  * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 import { test, expect } from "@playwright/test";
 
@@ -131,6 +131,37 @@ test.describe.serial("Flujo operativo completo", () => {
     await page.getByRole("button", { name: /registrar devolución/i }).click();
     await expect(page.getByText(/^Máximo /).first()).toBeVisible();
     await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+});
+
+test.describe("Monedas y tasas de cambio (RF-23)", () => {
+  test.skip(({ isMobile }) => isMobile, "El flujo de datos se valida en escritorio");
+  test("E2E-MON-01 Gerencia registra la tasa USD y Ventas factura en USD con equivalente en COP", async ({ page }) => {
+    await entrar(page, "gerencia@ferreteria.com");
+    await page.goto("/monedas");
+    const fila = page.getByRole("row", { name: /USD · Dólar/ });
+    await fila.getByRole("button", { name: /registrar tasa/i }).click();
+    const dialogo = page.getByRole("dialog");
+    await dialogo.getByLabel(/COP por 1 USD/i).fill("4000");
+    await dialogo.getByLabel(/fuente/i).fill("Prueba E2E");
+    await dialogo.getByRole("button", { name: /registrar tasa/i }).click();
+    await expect(page.getByText(/tasa de cambio registrada/i)).toBeVisible();
+    await salir(page);
+
+    await entrar(page, "laura.ventas@ferreteria.com");
+    await page.goto("/ventas/nueva");
+    await page.getByRole("combobox", { name: /moneda del documento/i }).click();
+    await page.getByRole("option", { name: /USD/ }).click();
+    await elegir(page, /^cliente/i, "Juan", /Juan Pérez/i);
+    await escanear(page, /^producto/i, "7701234500015");   // taladro: 650.000 COP = 162,50 USD
+    await expect(page.getByText(/equivalente en COP/i)).toBeVisible();
+    await page.getByRole("button", { name: /registrar venta/i }).click();
+    await page.getByRole("dialog").getByRole("button", { name: /registrar venta/i }).click();
+    await expect(page.getByRole("heading", { name: /^venta /i })).toBeVisible();
+    await expect(page.getByText(/1 USD = 4\.000,00 COP/).first()).toBeVisible();
+    await page.getByRole("link", { name: /ver comprobante/i }).click();
+    await expect(page.getByTestId("comprobante-total")).toContainText("162,50");
+    await expect(page.getByTestId("comprobante-equivalente")).toContainText("650.000");
   });
 });
 

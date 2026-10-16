@@ -38,11 +38,18 @@ import java.util.Map;
  * @param totalDescuentos total de descuentos
  * @param totalImpuestos total de impuestos
  * @param observaciones observaciones
+ * @param moneda moneda del documento (ISO 4217; COP en ventas anteriores a V5)
+ * @param tasaCambio pesos colombianos por 1 unidad de la moneda (1 en COP)
+ * @param subtotalMoneda subtotal en la moneda del documento
+ * @param descuentosMoneda descuentos en la moneda del documento
+ * @param impuestosMoneda impuestos en la moneda del documento
+ * @param totalMoneda total en la moneda del documento (los demás importes están en COP)
  */
 public record VentaResponse(Long id, String numeroInterno, Long clienteId, LocalDateTime fecha, EstadoDocumento estado,
                             List<Linea> lineas, BigDecimal total, FacturaInfo factura, String cliente, String usuario,
                             BigDecimal subtotal, BigDecimal totalDescuentos, BigDecimal totalImpuestos,
-                            String observaciones) {
+                            String observaciones, String moneda, BigDecimal tasaCambio, BigDecimal subtotalMoneda,
+                            BigDecimal descuentosMoneda, BigDecimal impuestosMoneda, BigDecimal totalMoneda) {
 
     /**
      * Línea de la venta (cantidad en unidad base).
@@ -64,12 +71,18 @@ public record VentaResponse(Long id, String numeroInterno, Long clienteId, Local
      * @param total total de la línea
      * @param garantiaHasta fin de la garantía
      * @param cantidadDevuelta cantidad ya devuelta (solo en el detalle)
+     * @param precioMoneda precio unitario en la moneda de la venta
+     * @param subtotalMoneda subtotal en la moneda de la venta
+     * @param descuentoMoneda descuento en la moneda de la venta
+     * @param impuestoMoneda impuesto en la moneda de la venta
+     * @param totalMoneda total en la moneda de la venta
      */
     public record Linea(Long productoId, BigDecimal cantidad, BigDecimal precioAplicado, BigDecimal subtotal, Long id,
                         String producto, String codigoBarras, String unidadBase, String unidad,
                         BigDecimal cantidadPresentacion, BigDecimal porcentajeDescuento, BigDecimal porcentajeIva,
                         BigDecimal descuento, BigDecimal impuesto, BigDecimal total, LocalDate garantiaHasta,
-                        BigDecimal cantidadDevuelta) { }
+                        BigDecimal cantidadDevuelta, BigDecimal precioMoneda, BigDecimal subtotalMoneda,
+                        BigDecimal descuentoMoneda, BigDecimal impuestoMoneda, BigDecimal totalMoneda) { }
 
     /**
      * Datos de la factura emitida.
@@ -129,8 +142,12 @@ public record VentaResponse(Long id, String numeroInterno, Long clienteId, Local
         FacturaInfo fi = f == null ? null
                 : new FacturaInfo(f.getId(), f.getNumeracionDian(), f.getModalidad(), f.getImpuestos(), f.getDescuentos(),
                         f.getFechaEmision(), fiscal);
+        String moneda = v.getMoneda() == null ? "COP" : v.getMoneda();
+        BigDecimal tasa = v.getTasaCambio() == null ? BigDecimal.ONE : v.getTasaCambio();
         return new VentaResponse(v.getId(), v.getNumeroInterno(), v.getIdCliente(), v.getFecha(), v.getEstado(), ls, total,
-                fi, cliente, usuario, subtotal, desc, imp, v.getObservaciones());
+                fi, cliente, usuario, subtotal, desc, imp, v.getObservaciones(), moneda, tasa,
+                o(v.getSubtotalMoneda(), subtotal), o(v.getDescuentosMoneda(), desc), o(v.getImpuestosMoneda(), imp),
+                o(v.getTotalMoneda(), total));
     }
 
     private static Linea linea(LineaVenta l, InfoProducto p, BigDecimal devuelta) {
@@ -139,6 +156,14 @@ public record VentaResponse(Long id, String numeroInterno, Long clienteId, Local
         return new Linea(l.getIdProducto(), l.getCantidad(), l.getPrecioAplicado(), subtotal, l.getId(),
                 p == null ? null : p.nombre(), p == null ? null : p.codigoBarras(), p == null ? null : p.unidadBase(),
                 l.getUnidad(), l.getCantidadPresentacion(), l.getPorcentajeDescuento(), l.getPorcentajeIva(),
-                l.getDescuento(), l.getImpuesto(), total, l.getGarantiaHasta(), devuelta);
+                l.getDescuento(), l.getImpuesto(), total, l.getGarantiaHasta(), devuelta,
+                o(l.getPrecioMoneda(), l.getPrecioAplicado()), o(l.getSubtotalMoneda(), subtotal),
+                o(l.getDescuentoMoneda(), l.getDescuento()), o(l.getImpuestoMoneda(), l.getImpuesto()),
+                o(l.getTotalMoneda(), total));
+    }
+
+    /** Valor en moneda del documento o, en ventas anteriores a V5 (siempre COP), el valor en COP. */
+    private static BigDecimal o(BigDecimal moneda, BigDecimal funcional) {
+        return moneda != null ? moneda : funcional;
     }
 }

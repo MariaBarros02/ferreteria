@@ -105,3 +105,21 @@ HAVING SUM(d.cantidad) > lv.cantidad;
 -- 4.x (V4) Precios aprobados por la misma persona que los propuso (segregación de funciones, RF-16)
 SELECT id_precio FROM precio
 WHERE estado_aprobacion = 'aprobado' AND usuario_proponente IS NOT NULL AND usuario_proponente = usuario_aprobador;
+
+-- 4.x (V5) Ventas cuyo total en moneda del documento no cuadra con sus líneas
+SELECT v.id_venta, v.moneda, v.total_moneda, SUM(l.total_moneda) AS suma_lineas
+FROM venta v JOIN linea_venta l ON l.id_venta = v.id_venta
+WHERE v.total_moneda IS NOT NULL
+GROUP BY v.id_venta, v.moneda, v.total_moneda
+HAVING v.total_moneda <> SUM(l.total_moneda);
+
+-- 4.x (V5) Documentos en moneda extranjera sin tasa coherente o en moneda inexistente / no funcional con tasa 1
+SELECT 'venta' AS documento, id_venta AS id, moneda, tasa_cambio FROM venta
+WHERE moneda <> (SELECT codigo FROM moneda WHERE funcional) AND tasa_cambio = 1
+UNION ALL
+SELECT 'compra', id_compra, moneda, tasa_cambio FROM compra
+WHERE moneda <> (SELECT codigo FROM moneda WHERE funcional) AND tasa_cambio = 1;
+
+-- 4.x (V5) Exactamente una moneda funcional
+SELECT COUNT(*) AS monedas_funcionales FROM moneda WHERE funcional HAVING COUNT(*) <> 1;
+

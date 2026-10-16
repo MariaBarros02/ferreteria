@@ -1,6 +1,6 @@
 /*
  * Nombre: CompraService.java
- * Descripción: Compras y recepción de mercancía (RF-03, RF-17): registro del pedido, recepciones parciales con documento de ingreso, lotes y vencimientos, costo promedio ponderado y anulaciones.
+ * Descripción: Compras y recepción de mercancía (RF-03, RF-17): registro del pedido en la moneda del proveedor con tasa pactada (RF-23), recepciones parciales con documento de ingreso, lotes y vencimientos, costo promedio ponderado en COP y anulaciones.
  * Fecha de creación: 2026-10-16
  * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
@@ -78,6 +78,7 @@ public class CompraService {
     private final PrecioService precioService;
     private final EventoAuditoriaService eventos;
     private final com.ferreteria.inventario.config.ParametrosNegocio parametros;
+    private final MonedaService monedas;
 
     /**
      * Filtros del listado.
@@ -109,7 +110,9 @@ public class CompraService {
         if (!prov.isProveedor()) {
             throw ApiException.regla("PROVEEDOR_INVALIDO", "error.proveedor.invalido", prov.getNumeroIdentificacion());
         }
+        MonedaService.Cambio cambio = monedas.cambioParaDocumento(req.moneda());
         Compra c = Compra.builder().numero(String.format("OC-%06d", compras.siguienteNumero()))
+                .moneda(cambio.moneda()).tasaCambio(cambio.tasa())
                 .idProveedor(prov.getId()).fecha(kardex.ahora()).estado(EstadoDocumento.ACTIVO)
                 .idUsuario(actor.idUsuario()).observaciones(limpiar(req.observaciones()))
                 .idOperacion(req.idOperacion()).build();
@@ -119,9 +122,12 @@ public class CompraService {
                 throw ApiException.regla("PRODUCTO_INACTIVO", "error.producto.inactivo", p.getNombre());
             }
             UnidadService.Conversion conv = unidades.aUnidadBase(p, l.cantidad(), l.unidad());
+            // El costo llega en la moneda de la compra; el costo pactado (base del costo promedio) se guarda en COP.
+            BigDecimal costoMoneda = UnidadService.porUnidadBase(l.costoUnitario(), conv.factor());
             c.getLineas().add(LineaCompra.builder().compra(c).idProducto(p.getId())
                     .cantidadPedida(conv.cantidadBase()).cantidadRecibida(BigDecimal.ZERO)
-                    .costoPactado(UnidadService.porUnidadBase(l.costoUnitario(), conv.factor()))
+                    .costoMoneda(costoMoneda)
+                    .costoPactado(cambio.esFuncional() ? costoMoneda : MonedaService.costoFuncional(costoMoneda, cambio.tasa()))
                     .unidad(conv.unidad()).cantidadPresentacion(conv.unidad() == null ? null : l.cantidad())
                     .costoPresentacion(conv.unidad() == null ? null : l.costoUnitario())
                     .porcentajeIva(nz(l.porcentajeIva())).porcentajeDescuento(nz(l.porcentajeDescuento())).build());
@@ -132,6 +138,12 @@ public class CompraService {
         d.put("proveedor", r.proveedor());
         d.put("lineas", r.lineas().size());
         d.put("total", r.total());
+        d.put("moneda", r.moneda());
+        if (!cambio.esFuncional()) {
+            d.put("tasaCambio", cambio.tasa());
+            d.put("fechaTasa", String.valueOf(cambio.fechaTasa()));
+            d.put("totalCop", r.totalFuncional());
+        }
         eventos.registrar(actor, Auditables.COMPRAS, Auditables.CREAR, "COMPRA", c.getNumero(),
                 "Compra registrada " + c.getNumero() + " a " + r.proveedor(), d);
         return r;
@@ -334,10 +346,11 @@ public class CompraService {
         Map<Long, String> nombres = new HashMap<>();
         return PaginaResponse.de(page, c -> {
             Montos.Totales t = totales(c.getLineas());
+            Montos.Totales tf = totalesFuncionales(c.getLineas());
             String prov = nombres.computeIfAbsent(c.getIdProveedor(),
                     k -> terceros.findById(k).map(TerceroResponse::nombreDe).orElse(""));
             return new CompraResumenResponse(c.getId(), c.getNumero(), prov, c.getFecha(), c.getEstado(),
-                    estadoRecepcion(c), c.getLineas().size(), t.total());
+                    estadoRecepcion(c), c.getLineas().size(), t.total(), moneda(c), tf.total());
         });
     }
 
@@ -347,16 +360,17 @@ public class CompraService {
         List<CompraResponse.Linea> ls = new ArrayList<>();
         for (LineaCompra l : c.getLineas()) {
             Producto p = ps.computeIfAbsent(l.getIdProducto(), k -> productos.findById(k).orElse(null));
-            Montos.Linea m = Montos.linea(l.getCantidadPedida(), l.getCostoPactado(), l.getPorcentajeDescuento(),
+            Montos.Linea m = Montos.linea(l.getCantidadPedida(), costoMoneda(l), l.getPorcentajeDescuento(),
                     l.getPorcentajeIva());
             ls.add(new CompraResponse.Linea(l.getId(), l.getIdProducto(), etiqueta(p), p == null ? null : p.getCodigoBarras(),
                     p == null ? null : p.getUnidadBase(), p == null ? null : p.getTipoRastreo(),
                     p != null && p.isTieneVencimiento(), l.getCantidadPedida(), l.getCantidadRecibida(),
                     l.getCantidadPedida().subtract(l.getCantidadRecibida()), l.getUnidad(), l.getCantidadPresentacion(),
                     l.getCostoPresentacion(), l.getCostoPactado(), l.getPorcentajeIva(), l.getPorcentajeDescuento(),
-                    m.subtotal(), m.descuento(), m.impuesto(), m.total()));
+                    m.subtotal(), m.descuento(), m.impuesto(), m.total(), costoMoneda(l)));
         }
         Montos.Totales t = totales(c.getLineas());
+        Montos.Totales tf = totalesFuncionales(c.getLineas());
         List<CompraResponse.Documento> docs = new ArrayList<>();
         Map<Long, LineaCompra> lineasPorId = new HashMap<>();
         c.getLineas().forEach(l -> lineasPorId.put(l.getId(), l));
@@ -376,7 +390,8 @@ public class CompraService {
         return new CompraResponse(c.getId(), c.getNumero(), c.getIdProveedor(),
                 prov == null ? null : TerceroResponse.nombreDe(prov), prov == null ? null : prov.getNumeroIdentificacion(),
                 c.getFecha(), c.getEstado(), estadoRecepcion(c), correo(c.getIdUsuario()), c.getObservaciones(),
-                c.getMotivoAnulacion(), ls, t.subtotal(), t.descuentos(), t.impuestos(), t.total(), docs);
+                c.getMotivoAnulacion(), ls, t.subtotal(), t.descuentos(), t.impuestos(), t.total(), docs, moneda(c),
+                c.getTasaCambio() == null ? BigDecimal.ONE : c.getTasaCambio(), tf.total());
     }
 
     /**
@@ -397,9 +412,25 @@ public class CompraService {
         return c.getLineas().stream().anyMatch(l -> l.getCantidadRecibida().signum() > 0) ? "PARCIAL" : "PENDIENTE";
     }
 
+    /** Totales en la moneda de la compra. */
     private static Montos.Totales totales(List<LineaCompra> ls) {
+        return Montos.totales(ls.stream().map(l -> Montos.linea(l.getCantidadPedida(), costoMoneda(l),
+                l.getPorcentajeDescuento(), l.getPorcentajeIva())).toList());
+    }
+
+    /** Totales equivalentes en COP (costo pactado). */
+    private static Montos.Totales totalesFuncionales(List<LineaCompra> ls) {
         return Montos.totales(ls.stream().map(l -> Montos.linea(l.getCantidadPedida(), l.getCostoPactado(),
                 l.getPorcentajeDescuento(), l.getPorcentajeIva())).toList());
+    }
+
+    /** Costo por unidad base en la moneda de la compra (compras anteriores a V5: el costo en COP). */
+    private static BigDecimal costoMoneda(LineaCompra l) {
+        return l.getCostoMoneda() != null ? l.getCostoMoneda() : l.getCostoPactado();
+    }
+
+    private static String moneda(Compra c) {
+        return c.getMoneda() == null ? MonedaService.FUNCIONAL_POR_DEFECTO : c.getMoneda();
     }
 
     private String correo(Integer idUsuario) {

@@ -12,6 +12,7 @@ import jakarta.persistence.*;
 import lombok.*;
 import com.ferreteria.inventario.domain.Convertidores;
 import com.ferreteria.inventario.domain.enums.EstadoDocumento;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -65,6 +66,17 @@ public class Compra {
     /** Clave de idempotencia. */
     @Column(name = "id_operacion", length = 64)
     private String idOperacion;
+
+    /** Moneda del proveedor (ISO 4217); COP por defecto (RN-17). */
+    @Column(name = "moneda", nullable = false, length = 3, columnDefinition = "bpchar(3)")
+    @Builder.Default
+    private String moneda = "COP";
+
+    /** Pesos colombianos por 1 unidad de la moneda de la compra, pactada en la orden (1 en COP). */
+    @Column(name = "tasa_cambio", nullable = false, precision = 18, scale = 6)
+    @Builder.Default
+    private BigDecimal tasaCambio = BigDecimal.ONE;
+
 
     /** Líneas de la compra. */
     @OneToMany(mappedBy = "compra", cascade = CascadeType.ALL)

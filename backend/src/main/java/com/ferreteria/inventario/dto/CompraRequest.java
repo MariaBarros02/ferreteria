@@ -26,7 +26,8 @@ import java.util.List;
  * @param proveedorId tercero con rol proveedor
  * @param observaciones observaciones
  * @param idOperacion clave de idempotencia generada por el cliente (evita registrar dos veces la misma compra)
- * @param lineas líneas (al menos una)
+ * @param lineas líneas (al menos una); el costo unitario se expresa en la moneda de la compra
+ * @param moneda moneda del proveedor (ISO 4217); nula = moneda funcional COP (RF-23)
  */
 public record CompraRequest(
         @NotNull(message = "{validacion.obligatorio}") @Positive(message = "{validacion.positivo}") Long proveedorId,
@@ -35,7 +36,13 @@ public record CompraRequest(
         @Size(max = 64, message = "{validacion.longitud}")
         @Pattern(regexp = Validaciones.ID_OPERACION, message = "{validacion.id.operacion}") String idOperacion,
         @NotEmpty(message = "{validacion.lineas.minimo}") @Size(max = 200, message = "{validacion.longitud}")
-        List<@Valid @NotNull(message = "{validacion.obligatorio}") Linea> lineas) {
+        List<@Valid @NotNull(message = "{validacion.obligatorio}") Linea> lineas,
+        @Pattern(regexp = "^[A-Za-z]{3}$", message = "{validacion.moneda}") String moneda) {
+
+    /** Compatibilidad: compra en la moneda funcional (COP). */
+    public CompraRequest(Long proveedorId, String observaciones, String idOperacion, List<Linea> lineas) {
+        this(proveedorId, observaciones, idOperacion, lineas, null);
+    }
 
     /**
      * Línea pedida.

@@ -1,10 +1,10 @@
 /*
  * Nombre: VentaNuevaPage.jsx
- * Descripción: Registro de venta (RF-04, RF-11): selector de cliente con búsqueda, selector de productos con búsqueda y lector de código de barras, líneas editables con presentación, descuento y reserva, vista previa de importes (el servidor calcula el total definitivo), confirmación y clave de idempotencia.
+ * Descripción: Registro de venta (RF-04, RF-11, RF-23): selector de cliente con búsqueda, selector de productos con búsqueda y lector de código de barras, moneda del documento con su tasa vigente, líneas editables con presentación, descuento y reserva, vista previa de importes (el servidor calcula el total definitivo), confirmación y clave de idempotencia.
  * Fecha de creación: 2026-10-16
  * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 import { useMemo, useRef, useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
@@ -18,13 +18,14 @@ import ConfirmDialog from '../../components/ConfirmDialog';
 import { useNotify } from '../../components/Notifier';
 import PageHeader from '../../components/PageHeader';
 import ProductoSelector from '../../components/ProductoSelector';
+import SelectorMoneda, { COP } from '../../components/SelectorMoneda';
 import TerceroSelector from '../../components/TerceroSelector';
 import useCarga from '../../hooks/useCarga';
 import useEnLinea from '../../hooks/useEnLinea';
 import { nuevaClaveOperacion } from '../../utils/archivos';
-import { cantidad as fmtCantidad, fecha, moneda, porcentaje } from '../../utils/formato';
+import { cantidad as fmtCantidad, fecha, moneda as fmtMoneda, porcentaje, tasaTexto } from '../../utils/formato';
 import { mensajeDeError } from '../../utils/mensajes';
-import { factor, linea as calcularLinea, totales as sumar } from '../../utils/totales';
+import { enCop, factor, linea as calcularLinea, precioEnMoneda, totales as sumar } from '../../utils/totales';
 import { numero, validarLineasVenta } from '../../validation/lineas';
 import { SIN_HTML } from '../../validation/schemas';
 
@@ -51,6 +52,7 @@ export default function VentaNuevaPage() {
   const navegar = useNavigate();
   const enLinea = useEnLinea();
   const [cliente, setCliente] = useState(null);
+  const [monedaDoc, setMonedaDoc] = useState(COP);
   const [lineas, setLineas] = useState([]);
   const [observaciones, setObservaciones] = useState('');
   const [intentado, setIntentado] = useState(false);
@@ -74,10 +76,15 @@ export default function VentaNuevaPage() {
   const editar = (i, campo, v) => setLineas((ls) => ls.map((l, j) => (j === i ? { ...l, [campo]: v } : l)));
   const quitar = (i) => setLineas((ls) => ls.filter((_, j) => j !== i));
 
+  const codigo = monedaDoc.codigo;
+  const tasa = monedaDoc.funcional ? 1 : Number(monedaDoc.tasaVigente) || 1;
+  /** Importe en la moneda del documento. */
+  const moneda = (n, decimales) => fmtMoneda(n, decimales, codigo);
   const calculos = useMemo(() => lineas.map((l) => {
     const base = numero(l.cantidad) * factor(l.producto, l.unidad);
-    return { base, ...calcularLinea(base, l.producto.precioVigente, numero(l.porcentajeDescuento), l.producto.porcentajeIva) };
-  }), [lineas]);
+    const precio = precioEnMoneda(l.producto.precioVigente, tasa);
+    return { base, precio, ...calcularLinea(base, precio, numero(l.porcentajeDescuento), l.producto.porcentajeIva) };
+  }), [lineas, tasa]);
   const total = useMemo(() => sumar(calculos), [calculos]);
   const validacion = validarLineasVenta(lineas);
   const errorObs = observaciones && !SIN_HTML.test(observaciones) ? 'errores.sinHtml' : null;
@@ -94,6 +101,7 @@ export default function VentaNuevaPage() {
     try {
       const venta = await api.ventas.crear({
         clienteId: cliente.id,
+        moneda: codigo,
         idOperacion: claveOperacion.current,
         observaciones: observaciones.trim() || null,
         lineas: lineas.map((l) => ({
@@ -130,6 +138,9 @@ export default function VentaNuevaPage() {
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                 {cliente.direccion} · {cliente.ciudad} · {cliente.telefono} · {cliente.correo}
               </Typography>)}
+            <Box sx={{ mt: 2 }}>
+              <SelectorMoneda id="venta-moneda" valor={monedaDoc} onCambio={setMonedaDoc} />
+            </Box>
           </Paper>
           <Paper sx={{ p: 2 }}>
             <Typography variant="h6" component="h2" gutterBottom>{t('venta.lineas')}</Typography>
@@ -183,7 +194,10 @@ export default function VentaNuevaPage() {
                               inputProps={{ inputMode: 'decimal', 'aria-label': `${t('venta.descuentoPct')} ${i + 1}` }}
                               error={Boolean(errorDe(i, 'porcentajeDescuento'))} helperText={errorDe(i, 'porcentajeDescuento')} />
                           </TableCell>
-                          <TableCell align="right">{moneda(l.producto.precioVigente)}</TableCell>
+                          <TableCell align="right">
+                            {moneda(c.precio, 2)}
+                            {!monedaDoc.funcional && <Typography variant="caption" color="text.secondary" component="div">{fmtMoneda(l.producto.precioVigente)}</Typography>}
+                          </TableCell>
                           <TableCell align="right">{moneda(c.total)}</TableCell>
                           <TableCell>
                             <IconButton aria-label={`${t('venta.quitarLinea')} ${i + 1}`} onClick={() => quitar(i)}><DeleteIcon /></IconButton>
@@ -207,6 +221,10 @@ export default function VentaNuevaPage() {
                 <Fila etiqueta={t('venta.impuestos')} valor={moneda(total.impuestos, 2)} />
                 <Divider sx={{ my: 1 }} />
                 <Fila etiqueta={t('venta.total')} valor={moneda(total.total, 2)} fuerte />
+                {!monedaDoc.funcional && (<>
+                  <Fila etiqueta={t('moneda.equivalenteCop')} valor={`≈ ${fmtMoneda(enCop(total.total, tasa), 2)}`} />
+                  <Typography variant="caption" color="text.secondary">{tasaTexto(codigo, monedaDoc.tasaVigente)} · {fecha(monedaDoc.fechaTasa)}</Typography>
+                </>)}
               </Stack>
               <Typography variant="caption" color="text.secondary" component="p" sx={{ mt: 1 }}>{t('venta.previsualizacionAviso')}</Typography>
               <Button fullWidth variant="contained" size="large" sx={{ mt: 2 }} onClick={revisar} disabled={!enLinea || enviando}>

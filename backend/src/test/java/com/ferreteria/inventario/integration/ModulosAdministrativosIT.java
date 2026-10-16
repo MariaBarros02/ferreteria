@@ -1,6 +1,6 @@
 /*
  * Nombre: ModulosAdministrativosIT.java
- * Descripción: Pruebas de integración de cierres (RF-08), usuarios y permisos (RF-09), importación/exportación de Excel (RF-10), conteos (RF-15), sin conexión (RF-12) y migraciones V3/V4.
+ * Descripción: Pruebas de integración de cierres (RF-08), usuarios y permisos (RF-09), importación/exportación de Excel (RF-10), conteos (RF-15), sin conexión (RF-12), monedas y tasas de cambio (RF-23) y migraciones V3/V4/V5.
  * Fecha de creación: 2026-10-16
  * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
@@ -191,5 +191,29 @@ class ModulosAdministrativosIT extends BaseIT {
                 .isInstanceOf(DataAccessException.class).hasMessageContaining("RF-08");
         assertThatThrownBy(() -> jdbc.update("delete from evento_auditoria where modulo = 'PRUEBA'"))
                 .isInstanceOf(DataAccessException.class);
+    }
+
+    @Test @DisplayName("IT-ADM-08 monedas: solo Gerencia/Administración registran tasas; venta en USD guarda importes en USD y equivalente en COP")
+    void ventaEnMonedaExtranjera() throws Exception {
+        String hoy = java.time.LocalDate.now(ZoneId.of("America/Bogota")).toString();
+        String tasa = "{\"tasa\": 4000, \"fechaVigencia\": \"" + hoy + "\", \"fuente\": \"Prueba IT\"}";
+        mvc.perform(post("/api/monedas/USD/tasas").contentType(MediaType.APPLICATION_JSON).content(tasa)
+                .header("Authorization", bearer("Ventas"))).andExpect(status().isForbidden());
+        mvc.perform(post("/api/monedas/USD/tasas").contentType(MediaType.APPLICATION_JSON).content(tasa)
+                .header("Authorization", bearer("Gerencia"))).andExpect(status().isCreated());
+        mvc.perform(get("/api/monedas").header("Authorization", bearer("Ventas")))
+                .andExpect(status().isOk()).andExpect(jsonPath("$[0].codigo").value("COP"));
+
+        var p = productoConStock("5", "100000");
+        var c = cliente();
+        String venta = "{\"clienteId\": " + c.getId() + ", \"moneda\": \"USD\", \"lineas\": [{\"productoId\": " + p.getId()
+                + ", \"cantidad\": 2}]}";
+        mvc.perform(post("/api/ventas").contentType(MediaType.APPLICATION_JSON).content(venta).header("Authorization", bearer("Ventas")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.moneda").value("USD"))
+                .andExpect(jsonPath("$.totalMoneda").value(50.00))      // 2 × (100.000 / 4.000) USD
+                .andExpect(jsonPath("$.total").value(200000.00));       // equivalente en COP
+        assertThatThrownBy(() -> jdbc.update("update tasa_cambio set tasa = 1 where fuente = 'Prueba IT'"))
+                .isInstanceOf(DataAccessException.class).hasMessageContaining("RF-23");
     }
 }

@@ -9,7 +9,7 @@
 import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { Button, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow,
-  TextField } from '@mui/material';
+  TextField, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../api/http';
@@ -70,7 +70,10 @@ export default function ComprasPage() {
                   <TableCell><EstadoChip estado={c.estado} /></TableCell>
                   <TableCell><EstadoChip estado={c.estadoRecepcion} /></TableCell>
                   <TableCell align="right" sx={{ display: { xs: 'none', sm: 'table-cell' } }}>{c.lineas}</TableCell>
-                  <TableCell align="right">{moneda(c.total)}</TableCell>
+                  <TableCell align="right">
+                    {moneda(c.total, undefined, c.moneda || 'COP')}
+                    {c.moneda && c.moneda !== 'COP' && <Typography variant="caption" color="text.secondary" component="div">{moneda(c.totalFuncional)}</Typography>}
+                  </TableCell>
                 </TableRow>))}
             </TableBody>
           </Table>

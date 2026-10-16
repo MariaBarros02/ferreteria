@@ -20,7 +20,7 @@ import { useNotify } from '../../components/Notifier';
 import PageHeader from '../../components/PageHeader';
 import useCarga from '../../hooks/useCarga';
 import { nuevaClaveOperacion } from '../../utils/archivos';
-import { cantidad, fecha, fechaHora, hoyIso, moneda } from '../../utils/formato';
+import { cantidad, fecha, fechaHora, hoyIso, moneda as fmtMoneda, tasaTexto } from '../../utils/formato';
 import { mensajeDeError } from '../../utils/mensajes';
 import { puede } from '../../utils/permisos';
 import { errorCantidad, numero } from '../../validation/lineas';
@@ -260,6 +260,10 @@ export default function CompraDetallePage() {
   if (error && !compra) return (<>{volver}<Alert severity="error" role="alert" action={<Button onClick={recargar}>{t('comun.reintentar')}</Button>}>{mensajeDeError(t, error)}</Alert></>);
   if (!compra) return <Box sx={{ py: 6, textAlign: 'center' }}><CircularProgress aria-label={t('comun.cargando')} /></Box>;
   const c = compra;
+  const codigo = c.moneda || 'COP';
+  const extranjera = codigo !== 'COP';
+  /** Importe en la moneda de la compra. */
+  const moneda = (n, decimales) => fmtMoneda(n, decimales, codigo);
   const activa = c.estado === 'ACTIVO';
   const conPendientes = c.lineas.some((l) => Number(l.cantidadPendiente) > 0);
   const conRecibido = c.lineas.some((l) => Number(l.cantidadRecibida) > 0);
@@ -297,10 +301,12 @@ export default function CompraDetallePage() {
         <Grid item xs={12} md={6}>
           <Paper sx={{ p: 2 }}>
             <Stack gap={1}>
+              <Dato etiqueta={t('moneda.moneda')}>{extranjera ? `${codigo} · ${tasaTexto(codigo, c.tasaCambio)}` : codigo}</Dato>
               <Dato etiqueta={t('venta.subtotal')}>{moneda(c.subtotal, 2)}</Dato>
               <Dato etiqueta={t('venta.descuentos')}>{moneda(c.descuentos, 2)}</Dato>
               <Dato etiqueta={t('venta.impuestos')}>{moneda(c.impuestos, 2)}</Dato>
               <Dato etiqueta={t('compra.total')}><strong>{moneda(c.total, 2)}</strong></Dato>
+              {extranjera && <Dato etiqueta={t('moneda.equivalenteCop')}>{fmtMoneda(c.totalFuncional, 2)}</Dato>}
             </Stack>
           </Paper>
         </Grid>
@@ -324,7 +330,10 @@ export default function CompraDetallePage() {
                   <TableCell align="right">{cantidad(l.cantidadPedida)} {l.unidadBase}</TableCell>
                   <TableCell align="right">{cantidad(l.cantidadRecibida)}</TableCell>
                   <TableCell align="right">{cantidad(l.cantidadPendiente)}</TableCell>
-                  <TableCell align="right" sx={{ display: { xs: 'none', md: 'table-cell' } }}>{moneda(l.costoUnitario, 2)}</TableCell>
+                  <TableCell align="right" sx={{ display: { xs: 'none', md: 'table-cell' } }}>
+                    {moneda(l.costoUnitarioMoneda ?? l.costoUnitario, 2)}
+                    {extranjera && <Typography variant="caption" color="text.secondary" component="div">{fmtMoneda(l.costoUnitario, 2)}</Typography>}
+                  </TableCell>
                   <TableCell align="right">{moneda(l.total, 2)}</TableCell>
                 </TableRow>))}
             </TableBody>
@@ -345,7 +354,7 @@ export default function CompraDetallePage() {
               {d.motivoAnulacion && <Typography variant="body2" color="text.secondary">{t('compra.motivoAnulacion')}: {d.motivoAnulacion}</Typography>}
               <Box component="ul" sx={{ m: 0, pl: 3 }}>
                 {d.recepciones.map((r) => (
-                  <li key={r.id}><Typography variant="body2">{r.producto}: {cantidad(r.cantidad)}{r.lote ? ` · ${t('inventario.lote')} ${r.lote}` : ''}{r.fechaVencimiento ? ` · ${t('inventario.vence')} ${fecha(r.fechaVencimiento)}` : ''} · {moneda(r.costoUnitario, 2)}</Typography></li>))}
+                  <li key={r.id}><Typography variant="body2">{r.producto}: {cantidad(r.cantidad)}{r.lote ? ` · ${t('inventario.lote')} ${r.lote}` : ''}{r.fechaVencimiento ? ` · ${t('inventario.vence')} ${fecha(r.fechaVencimiento)}` : ''} · {t('moneda.costoCop')} {fmtMoneda(r.costoUnitario, 2)}</Typography></li>))}
               </Box>
             </Paper>))}
         </Stack>

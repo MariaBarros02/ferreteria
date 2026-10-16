@@ -451,6 +451,60 @@ BEGIN
     END IF;
 END $$;
 
+-- -----------------------------------------------------------------
+-- PRUEBA 21 (RF-23): tasas de cambio válidas e inmutables; la moneda funcional no lleva tasa
+-- -----------------------------------------------------------------
+DO $$
+DECLARE r1 TEXT; r2 TEXT; r3 TEXT; r4 TEXT; v_id BIGINT;
+BEGIN
+    BEGIN
+        INSERT INTO tasa_cambio (codigo_moneda, tasa, fecha_vigencia, fuente)
+        VALUES ('USD', 4000, DATE '2026-01-02', 'prueba') RETURNING id_tasa INTO v_id;
+        BEGIN
+            UPDATE tasa_cambio SET tasa = 1 WHERE id_tasa = v_id;
+            r1 := 'FALLO';
+        EXCEPTION WHEN raise_exception THEN r1 := 'EXITO';
+        END;
+        BEGIN
+            INSERT INTO tasa_cambio (codigo_moneda, tasa, fecha_vigencia) VALUES ('USD', 0, DATE '2026-01-02');
+            r2 := 'FALLO';
+        EXCEPTION WHEN check_violation THEN r2 := 'EXITO';
+        END;
+        BEGIN
+            INSERT INTO tasa_cambio (codigo_moneda, tasa, fecha_vigencia) VALUES ('COP', 1, DATE '2026-01-02');
+            r3 := 'FALLO';
+        EXCEPTION WHEN raise_exception THEN r3 := 'EXITO';
+        END;
+        BEGIN
+            UPDATE venta SET tasa_cambio = 2 WHERE numero_interno = 'VTA-000001';
+            r4 := 'FALLO';
+        EXCEPTION WHEN check_violation THEN r4 := 'EXITO';
+        END;
+        RAISE EXCEPTION '__deshacer__';
+    EXCEPTION WHEN raise_exception THEN
+        IF SQLERRM <> '__deshacer__' THEN RAISE; END IF;
+    END;
+    INSERT INTO test_resultados (nombre_prueba, regla, resultado, detalle)
+    VALUES ('Tasa de cambio inmutable', 'RF-23', r1, 'Una tasa registrada no se modifica (se registra una nueva).'),
+           ('Tasa de cambio positiva', 'RF-23', r2, 'La tasa debe ser mayor que cero.'),
+           ('Moneda funcional sin tasa', 'RN-17', r3, 'COP es la moneda funcional y no admite tasa.'),
+           ('Venta en COP con tasa 1', 'RN-17', r4, 'Un documento en COP siempre tiene tasa 1.');
+END $$;
+
+-- -----------------------------------------------------------------
+-- PRUEBA 22 (RN-17): los documentos históricos quedan en COP con importes equivalentes
+-- -----------------------------------------------------------------
+DO $$
+DECLARE v_moneda TEXT; v_tasa NUMERIC; v_total NUMERIC; v_total_m NUMERIC;
+BEGIN
+    SELECT moneda, tasa_cambio, total, total_moneda INTO v_moneda, v_tasa, v_total, v_total_m
+    FROM venta WHERE numero_interno = 'VTA-000001';
+    INSERT INTO test_resultados (nombre_prueba, regla, resultado, detalle)
+    VALUES ('Venta histórica en COP', 'RN-17',
+            CASE WHEN v_moneda = 'COP' AND v_tasa = 1 AND v_total_m = v_total THEN 'EXITO' ELSE 'FALLO' END,
+            'VTA-000001 queda en COP, tasa 1 y total en moneda = total en COP.');
+END $$;
+
 -- Resumen final de la ejecución de pruebas
 SELECT regla, resultado, COUNT(*) AS cantidad
 FROM test_resultados

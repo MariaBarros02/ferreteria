@@ -177,6 +177,14 @@ export const api = {
     plantilla: (tipo) => descargar(`/api/importaciones/plantillas/${tipo}`, undefined, `plantilla-${tipo}.xlsx`),
     errores: (id) => descargar(`/api/importaciones/${id}/errores`, undefined, `importacion-${id}-errores.xlsx`),
   },
+  monedas: {
+    listar: (soloActivas = false) => get('/api/monedas', { soloActivas }),
+    crear: (d) => post('/api/monedas', d),
+    cambiarEstado: (codigo, activo) => patch(`/api/monedas/${codigo}/estado`, { activo }),
+    tasas: (codigo, params) => get(`/api/monedas/${codigo}/tasas`, params),
+    registrarTasa: (codigo, d) => post(`/api/monedas/${codigo}/tasas`, d),
+    convertir: (monto, desde, hacia) => get('/api/monedas/conversion', { monto, desde, hacia }),
+  },
   exportar: (que, params) => descargar(`/api/exportaciones/${que}`, params, `${que}.xlsx`),
   catalogo: (pagina, tamano = 500) => get('/api/catalogo/sincronizacion', { pagina, tamano }),
 };

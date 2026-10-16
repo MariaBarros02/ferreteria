@@ -26,6 +26,7 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import HistoryIcon from '@mui/icons-material/History';
 import LockClockIcon from '@mui/icons-material/LockClock';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
+import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext';
 import { api } from '../api/http';
@@ -54,6 +55,7 @@ export const MENU = [
     { to: '/terceros', clave: 'nav.terceros', icono: <PeopleIcon />, ver: () => true },
   ] },
   { grupo: 'nav.grupoAdministracion', enlaces: [
+    { to: '/monedas', clave: 'nav.monedas', icono: <CurrencyExchangeIcon />, ver: () => true },
     { to: '/importacion', clave: 'nav.importacion', icono: <UploadFileIcon />, ver: (r) => puedeImportar(r) },
     { to: '/auditoria', clave: 'nav.auditoria', icono: <HistoryIcon />, ver: (r) => puede(r, 'auditoria.ver') },
     { to: '/cierres', clave: 'nav.cierres', icono: <LockClockIcon />, ver: (r) => puede(r, 'cierres.gestionar') },

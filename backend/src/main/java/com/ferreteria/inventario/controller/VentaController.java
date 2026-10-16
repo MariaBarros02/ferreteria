@@ -59,7 +59,7 @@ public class VentaController {
             responses = {
                     @ApiResponse(responseCode = "201", description = "Venta y factura creadas"),
                     @ApiResponse(responseCode = "409", description = "Saldo insuficiente (RN-03, RN-11), lote vencido o período cerrado"),
-                    @ApiResponse(responseCode = "422", description = "Sin precio vigente, conversión no configurada, descuento no permitido")})
+                    @ApiResponse(responseCode = "422", description = "Sin precio vigente, conversión no configurada, descuento no permitido o sin tasa de cambio vigente para la moneda")})
     public VentaResponse registrar(@Valid @RequestBody VentaRequest req, Authentication auth, HttpServletRequest http) {
         return servicio.registrar(req, auth.getName(), http.getRemoteAddr());
     }

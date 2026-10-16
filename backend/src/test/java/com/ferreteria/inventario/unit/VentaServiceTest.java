@@ -32,6 +32,7 @@ import com.ferreteria.inventario.service.EventoAuditoriaService;
 import com.ferreteria.inventario.service.FacturacionPort;
 import com.ferreteria.inventario.service.KardexService;
 import com.ferreteria.inventario.service.LoteService;
+import com.ferreteria.inventario.service.MonedaService;
 import com.ferreteria.inventario.service.UnidadService;
 import com.ferreteria.inventario.service.VentaService;
 import java.math.BigDecimal;
@@ -51,7 +52,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-/** Casos: UT-VEN-01 … UT-VEN-18 (ver docs/CASOS_DE_PRUEBA.md). */
+/** Casos: UT-VEN-01 … UT-VEN-20 (ver docs/CASOS_DE_PRUEBA.md). */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class VentaServiceTest {
@@ -71,6 +72,8 @@ class VentaServiceTest {
     @Mock AuditoriaService auditoria;
     @Mock EventoAuditoriaService eventos;
     @Mock FacturacionPort facturacion;
+    @Mock MonedaRepository monedasRepo;
+    @Mock TasaCambioRepository tasas;
 
     VentaService servicio;
     Producto taladro;
@@ -83,7 +86,10 @@ class VentaServiceTest {
         ParametrosNegocio parametros = ParametrosNegocio.porDefecto();
         KardexService kardex = new KardexService(inventarios, productos, auditoria, cierres, parametros, reloj);
         servicio = new VentaService(ventas, terceros, productos, precios, facturas, usuarios, reservas, lineaVentaLotes,
-                facturacion, new UnidadService(conversiones), kardex, new LoteService(lotes), eventos, parametros);
+                facturacion, new UnidadService(conversiones), kardex, new LoteService(lotes), eventos, parametros,
+                new MonedaService(monedasRepo, tasas, usuarios, kardex, eventos));
+        when(monedasRepo.findFirstByFuncionalTrue()).thenReturn(Optional.of(Moneda.builder().codigo("COP").funcional(true).build()));
+        when(monedasRepo.findById("USD")).thenReturn(Optional.of(Moneda.builder().codigo("USD").activa(true).decimales((short) 2).build()));
         cliente = Tercero.builder().id(1L).cliente(true).numeroIdentificacion("1002003000").primerNombre("Juan")
                 .primerApellido("Pérez").build();
         taladro = Producto.builder().id(10L).nombre("Taladro").marca("Bosch").presentacion("500W").unidadBase("unidad")
@@ -289,5 +295,38 @@ class VentaServiceTest {
         ArgumentCaptor<Venta> captor = ArgumentCaptor.forClass(Venta.class);
         verify(ventas, org.mockito.Mockito.atLeastOnce()).save(captor.capture());
         assertThat(r.getIdVenta()).isEqualTo(captor.getValue().getId());
+    }
+
+    @Test @DisplayName("UT-VEN-19 venta en USD: precio convertido con la tasa vigente, importes en USD y equivalente en COP")
+    void ventaEnDolares() {
+        when(tasas.findFirstByCodigoMonedaAndFechaVigenciaLessThanEqualOrderByFechaVigenciaDescIdDesc(eq("USD"), any()))
+                .thenReturn(Optional.of(TasaCambio.builder().codigoMoneda("USD").tasa(new BigDecimal("4000"))
+                        .fechaVigencia(LocalDate.of(2026, 10, 6)).build()));
+        taladro.setPorcentajeIva(new BigDecimal("19"));
+        VentaRequest req = new VentaRequest(1L, List.of(new VentaRequest.Linea(10L, new BigDecimal("2"), null)), null, null,
+                null, null, "USD");
+        VentaResponse r = servicio.registrar(req, "laura.ventas@ferreteria.com", "x");
+        // 650.000 COP / 4.000 = 162,50 USD; 2 u = 325,00; IVA 19 % = 61,75; total 386,75 USD = 1.547.000 COP
+        assertThat(r.moneda()).isEqualTo("USD");
+        assertThat(r.tasaCambio()).isEqualByComparingTo("4000");
+        assertThat(r.lineas().get(0).precioMoneda()).isEqualByComparingTo("162.50");
+        assertThat(r.subtotalMoneda()).isEqualByComparingTo("325.00");
+        assertThat(r.impuestosMoneda()).isEqualByComparingTo("61.75");
+        assertThat(r.totalMoneda()).isEqualByComparingTo("386.75");
+        assertThat(r.total()).isEqualByComparingTo("1547000");
+        assertThat(r.lineas().get(0).precioAplicado()).isEqualByComparingTo("650000");   // el precio oficial sigue en COP
+        assertThat(inv.getDisponible()).isEqualByComparingTo("16");
+    }
+
+    @Test @DisplayName("UT-VEN-20 sin tasa vigente para la moneda se rechaza (422) sin tocar inventario ni factura")
+    void ventaSinTasa() {
+        when(tasas.findFirstByCodigoMonedaAndFechaVigenciaLessThanEqualOrderByFechaVigenciaDescIdDesc(eq("USD"), any()))
+                .thenReturn(Optional.empty());
+        VentaRequest req = new VentaRequest(1L, List.of(new VentaRequest.Linea(10L, new BigDecimal("1"), null)), null, null,
+                null, null, "USD");
+        assertThatThrownBy(() -> servicio.registrar(req, "laura.ventas@ferreteria.com", "x"))
+                .satisfies(e -> assertThat(((ApiException) e).getCodigo()).isEqualTo("SIN_TASA_CAMBIO"));
+        assertThat(inv.getDisponible()).isEqualByComparingTo("18");
+        verify(facturas, never()).save(any());
     }
 }

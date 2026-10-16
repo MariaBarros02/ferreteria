@@ -1,10 +1,10 @@
 <!--
   Nombre: MODULOS.md
-  Descripción: Comportamiento implementado de los módulos operativos: arquitectura, ventas y comprobantes, compras y recepción, lotes y vencimientos, precios, devoluciones, ajustes, conteos, reservas, cierres, auditoría, importación/exportación Excel, lectores de código, consulta sin conexión y permisos.
+  Descripción: Comportamiento implementado de los módulos operativos: arquitectura, monedas y tasas de cambio, ventas y comprobantes, compras y recepción, lotes y vencimientos, precios, devoluciones, ajustes, conteos, reservas, cierres, auditoría, importación/exportación Excel, lectores de código, consulta sin conexión y permisos.
   Fecha de creación: 2026-10-16
   Fecha de actualización: 2026-10-16
   Autor: Equipo Ferretería
-  Versión: 1.0.0
+  Versión: 1.1.0
 -->
 
 # Módulos operativos: cómo funcionan
@@ -117,7 +117,18 @@ Registros inmutables (disparadores). No hay acciones de edición en la interfaz.
 - **Solo consulta:** el cliente HTTP rechaza cualquier escritura sin conexión y los botones de registro se deshabilitan; no hay cola de operaciones pendientes, por lo que no puede haber duplicados al reconectar.
 - Al cerrar sesión la copia local se borra.
 
-## 13. Permisos (RF-09)
+## 13. Monedas y tasas de cambio (RF-23, RN-17)
+
+- **Moneda funcional: COP.** Inventario, costo promedio, precios aprobados, cierres, conciliación, devoluciones y auditoría se llevan en pesos colombianos.
+- **Catálogo** (`/monedas`): COP (funcional), USD, EUR, MXN, PEN y BRL vienen precargadas (migración V5); Gerencia o Administración pueden registrar otras monedas ISO 4217 y activarlas o desactivarlas (COP no se desactiva). **No se precargan tasas.**
+- **Tasas de cambio:** COP por 1 unidad, con fecha de vigencia (no futura) y fuente (p. ej. *TRM Banco de la República*). Las registran Gerencia o Administración; quedan auditadas y **no se editan ni se borran** (disparador de BD): una corrección es una tasa nueva. La tasa vigente de un día es la de fecha más reciente no posterior a ese día y, si hay varias ese día, la última registrada. Historial por moneda y **conversor** entre monedas (pasando por COP) disponibles para todos los roles.
+- **Ventas en otra moneda:** en *Nueva venta* se elige la moneda del documento (solo las activas con tasa vigente). El servidor convierte el precio vigente en COP con la tasa del día (4 decimales), calcula subtotal, descuento, IVA y total en esa moneda (2 decimales, HALF_UP) y guarda además el equivalente de cada importe en COP (importe × tasa). Sin tasa vigente la venta se rechaza (422 `SIN_TASA_CAMBIO`) sin tocar inventario. El detalle, el comprobante y el PDF muestran la moneda, la tasa aplicada (“1 USD = 4.000,00 COP”) y el **equivalente en COP**.
+- **Compras en otra moneda:** el costo se digita en la moneda del proveedor; la orden fija la tasa vigente al crearla y guarda el costo por unidad base en COP, que es el que alimenta el costo promedio en cada recepción.
+- **Listados y Excel:** las ventas y compras muestran el total en su moneda y, si es extranjera, el total en COP; la exportación de ventas incluye `moneda` y `total_moneda`.
+- **Compatibilidad:** todas las ventas y compras anteriores quedan en COP con tasa 1 (sus importes en moneda = importes en COP).
+- **No implementado:** consulta automática de la TRM (las tasas se registran a mano) ni factura electrónica DIAN en moneda extranjera (ver pendientes P-09 y P-10 del levantamiento).
+
+## 14. Permisos (RF-09)
 
 La API es la autoridad (`@PreAuthorize` por endpoint); el frontend oculta el menú y las acciones no permitidas (`frontend/src/utils/permisos.js`) y muestra *acceso denegado* en URLs directas. Resumen:
 
@@ -133,5 +144,6 @@ La API es la autoridad (`@PreAuthorize` por endpoint); el frontend oculta el men
 | Auditoría | | | ✔ | ✔ | ✔ |
 | Usuarios y roles | | | | ✔ | |
 | Ver costos | | | ✔ | ✔ | ✔ |
+| Monedas: consultar / registrar tasas y monedas | ✔ / | ✔ / | ✔ / | ✔ / ✔ | ✔ / ✔ |
 
 Gestión de usuarios (`/usuarios`): alta, edición de rol y estado, cambio de contraseña (mínimo 10 caracteres con mayúscula, minúscula y número); el sistema impide dejar sin administradores activos.

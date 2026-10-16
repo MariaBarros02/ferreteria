@@ -44,7 +44,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
-/** Casos UT-COM-01 … UT-COM-10. */
+/** Casos UT-COM-01 … UT-COM-11. */
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
 class CompraServiceTest {
@@ -63,6 +63,8 @@ class CompraServiceTest {
     @Mock AuditoriaService auditoria;
     @Mock PrecioService precioService;
     @Mock EventoAuditoriaService eventos;
+    @Mock MonedaRepository monedasRepo;
+    @Mock TasaCambioRepository tasas;
 
     CompraService servicio;
     Producto tornillo;
@@ -79,7 +81,9 @@ class CompraServiceTest {
         ParametrosNegocio parametros = ParametrosNegocio.porDefecto();
         KardexService kardex = new KardexService(inventarios, productos, auditoria, cierres, parametros, reloj);
         servicio = new CompraService(compras, lineas, documentos, recepciones, terceros, productos, usuarios, lotes,
-                new UnidadService(conversiones), kardex, new LoteService(lotes), precioService, eventos, parametros);
+                new UnidadService(conversiones), kardex, new LoteService(lotes), precioService, eventos, parametros,
+                new MonedaService(monedasRepo, tasas, usuarios, kardex, eventos));
+        when(monedasRepo.findFirstByFuncionalTrue()).thenReturn(Optional.of(Moneda.builder().codigo("COP").funcional(true).build()));
         tornillo = Producto.builder().id(2L).nombre("Tornillo").marca("Genérico").presentacion("1 pulgada")
                 .unidadBase("unidad").tipoRastreo(TipoRastreo.NINGUNO).build();
         pegante = Producto.builder().id(3L).nombre("Pegante").marca("Sika").presentacion("250ml").unidadBase("unidad")
@@ -249,5 +253,23 @@ class CompraServiceTest {
         compra.getLineas().get(0).setCantidadRecibida(BigDecimal.ONE);
         assertThatThrownBy(() -> servicio.anular(50L, "error", actor))
                 .satisfies(e -> assertThat(((ApiException) e).getCodigo()).isEqualTo("COMPRA_CON_RECEPCIONES"));
+    }
+
+    @Test @DisplayName("UT-COM-11 compra en USD: el costo se pacta en USD y el costo base del promedio se guarda en COP")
+    void compraEnDolares() {
+        when(monedasRepo.findById("USD")).thenReturn(Optional.of(Moneda.builder().codigo("USD").activa(true).decimales((short) 2).build()));
+        when(tasas.findFirstByCodigoMonedaAndFechaVigenciaLessThanEqualOrderByFechaVigenciaDescIdDesc(org.mockito.ArgumentMatchers.eq("USD"), any()))
+                .thenReturn(Optional.of(TasaCambio.builder().codigoMoneda("USD").tasa(new BigDecimal("4000"))
+                        .fechaVigencia(LocalDate.of(2026, 10, 15)).build()));
+        CompraResponse r = servicio.crear(new CompraRequest(9L, null, null, List.of(
+                new CompraRequest.Linea(2L, new BigDecimal("10"), null, new BigDecimal("2.5"), null, null)), "USD"), actor);
+        LineaCompra l = compra.getLineas().get(0);
+        assertThat(compra.getMoneda()).isEqualTo("USD");
+        assertThat(compra.getTasaCambio()).isEqualByComparingTo("4000");
+        assertThat(l.getCostoMoneda()).isEqualByComparingTo("2.5");
+        assertThat(l.getCostoPactado()).isEqualByComparingTo("10000");   // 2,5 USD x 4.000
+        assertThat(r.total()).isEqualByComparingTo("25.00");              // 10 x 2,5 USD
+        assertThat(r.totalFuncional()).isEqualByComparingTo("100000");    // equivalente en COP
+        assertThat(r.lineas().get(0).costoUnitarioMoneda()).isEqualByComparingTo("2.5");
     }
 }

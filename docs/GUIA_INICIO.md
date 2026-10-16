@@ -140,7 +140,8 @@ npm run dev          # http://localhost:5173  (el proxy de Vite envía /api al p
 3. Cierre sesión y entre como `laura.ventas@ferreteria.com` → **Ventas → Nueva venta**. Busque el cliente (“Juan”) y agregue el taladro escribiendo su nombre o su código `7701234500015` + Enter (así funciona también un lector de código de barras). Revise la vista previa y registre: se abre el detalle de la venta y desde allí **Ver comprobante** → imprimir o descargar PDF (comprobante interno, sin validez fiscal). Solo el taladro del seed tiene precio vigente aprobado; otro producto responderá "sin precio vigente" (RN-07) hasta que Inventario lo proponga en **Precios** y Gerencia lo apruebe.
 4. Pida más unidades que el saldo → "Saldo insuficiente" y el inventario no cambia.
 5. Entre como `carlos.compras@…` → **Compras → Nueva compra**, y luego como `marta.inventario@…` registre la **recepción** (parcial o total) desde el detalle de la compra.
-6. Entre como `gerencia@…`: consulta ventas, **Auditoría** y **Cierres**, aprueba precios, pero no registra ventas.
+6. Entre como `gerencia@…`: consulta ventas, **Auditoría** y **Cierres**, aprueba precios, pero no registra ventas. En **Administración → Monedas** registre la tasa del dólar (p. ej. 4.000 COP por 1 USD, fuente “TRM”).
+7. Vuelva como `laura.ventas@…` y en **Nueva venta** elija **Moneda del documento: USD**: los precios se muestran en dólares, el resumen indica el equivalente en COP y el comprobante muestra la tasa aplicada. Sin tasa registrada, USD aparece deshabilitado.
 
 El comportamiento de cada módulo (ventas, compras, lotes y vencimientos, precios, devoluciones, ajustes, conteos, reservas, cierres, auditoría, Excel, modo sin conexión y permisos) está en [`MODULOS.md`](MODULOS.md).
 
@@ -296,7 +297,7 @@ Informes en `reports/`. Definiciones y umbrales: `metrics/metricas.json`; detall
 
 | Workflow | Se ejecuta en | Jobs (checks visibles en el PR) |
 |---|---|---|
-| `CI` (`ci.yml`) | `push` a `main`, `feature/**` y `fix/**`; `pull_request` hacia `main` (cada commit nuevo del PR); manual (`workflow_dispatch`) | **Base de datos (PostgreSQL 16)**: `init-db.sh` (DDL, migraciones, seed, 25 pruebas SQL, verificaciones) y reaplicación idempotente de las migraciones · **Backend (Maven verify)**: unitarias + integración con Testcontainers, JaCoCo · **Frontend (Vitest + build)**: pruebas, build y `npm audit --omit=dev` · **E2E (Playwright)**: backend real + frontend + Chromium (escritorio y móvil) |
+| `CI` (`ci.yml`) | `push` a `main`, `feature/**` y `fix/**`; `pull_request` hacia `main` (cada commit nuevo del PR); manual (`workflow_dispatch`) | **Base de datos (PostgreSQL 16)**: `init-db.sh` (DDL, migraciones, seed, 30 pruebas SQL, verificaciones) y reaplicación idempotente de las migraciones · **Backend (Maven verify)**: unitarias + integración con Testcontainers, JaCoCo · **Frontend (Vitest + build)**: pruebas, build y `npm audit --omit=dev` · **E2E (Playwright)**: backend real + frontend + Chromium (escritorio y móvil) |
 | `PR automático` (`pr-automatico.yml`) | `push` a `feature/**` o `fix/**` | Crea el PR hacia `main` si la rama no tiene uno abierto. No fusiona ni hace commits (no hay bucles). |
 
 Cada job publica un **resumen** en la ejecución (conteo de pruebas) y sube los reportes como artefactos (surefire/failsafe/JaCoCo, JUnit de Vitest, reporte HTML de Playwright y registros de backend/frontend si E2E falla).

@@ -4,10 +4,10 @@
  * Fecha de creación: 2026-10-16
  * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 import { jsPDF } from 'jspdf';
-import { cantidad, fecha, fechaHora, moneda } from '../utils/formato';
+import { cantidad, fecha, fechaHora, moneda as fmtMoneda, tasaTexto } from '../utils/formato';
 import { leyendaComprobante, tituloComprobante, unir } from '../utils/comprobante';
 
 export { leyendaComprobante, nombreArchivoComprobante, tituloComprobante } from '../utils/comprobante';
@@ -20,6 +20,11 @@ export { leyendaComprobante, nombreArchivoComprobante, tituloComprobante } from 
  */
 export function crearComprobantePdf(detalle, t) {
   const { venta, cliente, empresa } = detalle;
+  const codigo = venta.moneda || 'COP';
+  const extranjera = codigo !== 'COP';
+  /** Importes en la moneda del documento (RF-23). */
+  const moneda = (n, d) => fmtMoneda(n, d, codigo);
+  const enDoc = (enMoneda, enCop) => (enMoneda ?? enCop);
   const doc = new jsPDF({ unit: 'mm', format: 'letter' });
   const ancho = doc.internal.pageSize.getWidth();
   const alto = doc.internal.pageSize.getHeight();
@@ -44,7 +49,8 @@ export function crearComprobantePdf(detalle, t) {
   texto(`${t('comprobante.numeroInterno')}: ${venta.numeroInterno}`, ancho - m, y + 5, { align: 'right' });
   texto(`${t('comprobante.numeracion')}: ${venta.factura?.numeracionDian ?? '—'}`, ancho - m, y + 9, { align: 'right' });
   texto(`${t('comprobante.fecha')}: ${fechaHora(venta.factura?.fechaEmision || venta.fecha)}`, ancho - m, y + 13, { align: 'right' });
-  y += 20;
+  texto(`${t('moneda.moneda')}: ${codigo}${extranjera ? ` · ${tasaTexto(codigo, venta.tasaCambio)}` : ''}`, ancho - m, y + 17, { align: 'right' });
+  y += 24;
 
   doc.setDrawColor(180); doc.line(m, y, ancho - m, y); salto(6);
   doc.setFont('helvetica', 'bold'); texto(t('comprobante.cliente'), m, y); doc.setFont('helvetica', 'normal');
@@ -69,17 +75,17 @@ export function crearComprobantePdf(detalle, t) {
     texto(descripcion, col.desc + 1, y);
     const unidad = l.unidad ? `${cantidad(l.cantidadPresentacion)} ${l.unidad}` : `${cantidad(l.cantidad)} ${l.unidadBase ?? ''}`;
     texto(unidad, col.cant, y, { align: 'right' });
-    texto(moneda(l.precioAplicado, 2), col.precio + 15, y, { align: 'right' });
-    texto(`${moneda(l.descuento, 2)} / ${moneda(l.impuesto, 2)}`, col.desc2 + 15, y, { align: 'right' });
-    texto(moneda(l.total, 2), col.total, y, { align: 'right' });
+    texto(moneda(enDoc(l.precioMoneda, l.precioAplicado), 2), col.precio + 15, y, { align: 'right' });
+    texto(`${moneda(enDoc(l.descuentoMoneda, l.descuento), 2)} / ${moneda(enDoc(l.impuestoMoneda, l.impuesto), 2)}`, col.desc2 + 15, y, { align: 'right' });
+    texto(moneda(enDoc(l.totalMoneda, l.total), 2), col.total, y, { align: 'right' });
     if (l.garantiaHasta) { salto(4); doc.setFontSize(8); texto(`${t('comprobante.garantiaHasta')}: ${fecha(l.garantiaHasta)}`, col.desc + 1, y); doc.setFontSize(9); }
     salto(Math.max(5, descripcion.length * 4));
   });
   doc.line(m, y - 2, ancho - m, y - 2);
   salto(3);
   const totales = [
-    [t('comprobante.subtotal'), venta.subtotal], [t('comprobante.descuentos'), venta.totalDescuentos],
-    [t('comprobante.impuestos'), venta.totalImpuestos], [t('comprobante.total'), venta.total],
+    [t('comprobante.subtotal'), enDoc(venta.subtotalMoneda, venta.subtotal)], [t('comprobante.descuentos'), enDoc(venta.descuentosMoneda, venta.totalDescuentos)],
+    [t('comprobante.impuestos'), enDoc(venta.impuestosMoneda, venta.totalImpuestos)], [t('comprobante.total'), enDoc(venta.totalMoneda, venta.total)],
   ];
   totales.forEach(([e, v], i) => {
     if (i === totales.length - 1) doc.setFont('helvetica', 'bold');
@@ -87,6 +93,7 @@ export function crearComprobantePdf(detalle, t) {
     salto(5);
   });
   doc.setFont('helvetica', 'normal');
+  if (extranjera) { texto(`${t('moneda.equivalenteCop')}: ${fmtMoneda(venta.total, 2)}`, ancho - m, y, { align: 'right' }); salto(5); }
   if (venta.observaciones) { salto(2); texto(`${t('comprobante.observaciones')}: ${venta.observaciones}`, m, y); salto(5); }
   texto(`${t('comprobante.atendio')}: ${detalle.usuarioNombre ?? '—'}`, m, y);
 

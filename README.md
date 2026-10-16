@@ -12,7 +12,7 @@
 > **¿Primera vez? Siga [`docs/GUIA_INICIO.md`](docs/GUIA_INICIO.md)**: instalación paso a paso, pruebas, despliegue, GitHub Actions y conexión con Taiga.
 > Requisitos, matriz de trazabilidad y pendientes: [`docs/3_levantamiento_consolidado.md`](docs/3_levantamiento_consolidado.md) (secciones 9–11). Funcionamiento de cada módulo: [`docs/MODULOS.md`](docs/MODULOS.md).
 
-Backend **Spring Boot 3 / Java 21 / JPA / Lombok / PostgreSQL** (API REST JSON, JWT, i18n es/en, OpenAPI) y frontend **React 18 / Material UI / Formik + Yup** (responsivo, accesible, i18n, sesión persistente), construidos a partir de `6_analisis_diseno_ferreteria.md`.
+Backend **Spring Boot 3 / Java 21 / JPA / Lombok / PostgreSQL** (API REST JSON, JWT, i18n es/en, OpenAPI) y frontend **React 18 / Material UI / Formik + Yup** (responsivo, accesible, i18n, sesión persistente), construidos a partir de [`docs/6_analisis_diseno_ferreteria.md`](docs/6_analisis_diseno_ferreteria.md) (análisis y diseño, versión 1.1).
 
 ```
 database/   DDL, seed, pruebas SQL, verificaciones, init-db.sh y migrations/ (Flyway; única fuente del esquema)
@@ -20,7 +20,7 @@ backend/    API REST (controller → service → repository), seguridad JWT, i18
 frontend/   SPA React, pruebas Vitest/Playwright/Selenium, Dockerfile/nginx
 scripts/    build-test-*.sh, repo-comandos.sh, ci-pipeline.sh, deploy.sh, taiga/ (issues, métricas)
 tests/      k6 (carga, estrés, límite, concurrencia) y pruebas de los scripts Python
-docs/       3_levantamiento_consolidado.md (requisitos + trazabilidad), MODULOS.md, GUIA_INICIO.md, CASOS_DE_PRUEBA.md, METRICAS.md
+docs/       3_levantamiento_consolidado.md (requisitos + trazabilidad), 6_analisis_diseno_ferreteria.md (análisis y diseño), MODULOS.md, GUIA_INICIO.md, CASOS_DE_PRUEBA.md, METRICAS.md
 .github/    workflows/ci.yml (BD, backend, frontend, E2E) y pr-automatico.yml
 metrics/    metricas.json (definición de métricas)
 ```
@@ -42,15 +42,15 @@ Usuarios del seed (clave demo `Ferreteria2026*` solo en perfil dev): `laura.vent
 ## Qué implementa
 | Área | Dónde |
 |---|---|
-| Módulos (RF-01 a RF-22) | Productos y presentaciones, terceros, **ventas** con selectores, IVA, descuentos, reservas, lotes FEFO y garantía; **detalle de venta**, **comprobante** imprimible y PDF; **compras** y **recepciones parciales** con lote y vencimiento; inventario por estado, alertas y baja por vencimiento; **precios** con aprobación; **devoluciones** de cliente y a proveedor; **ajustes**; **conteos físicos**; **cierres** mensuales; **auditoría** en la interfaz; **usuarios**; **importación/exportación Excel**; lectores de código; consulta sin conexión. Detalle en [`docs/MODULOS.md`](docs/MODULOS.md). |
-| Base de datos | Flyway `V1`–`V4` (compatibles con datos existentes, idempotentes); disparadores de inmutabilidad y no borrado; `03_pruebas.sql` (25 pruebas) y `04_verificaciones.sql` (saldo = suma de movimientos, lotes, devoluciones, totales). |
+| Módulos (RF-01 a RF-23) | Productos y presentaciones, terceros, **ventas** con selectores, IVA, descuentos, reservas, lotes FEFO y garantía; **detalle de venta**, **comprobante** imprimible y PDF; **compras** y **recepciones parciales** con lote y vencimiento; inventario por estado, alertas y baja por vencimiento; **precios** con aprobación; **devoluciones** de cliente y a proveedor; **ajustes**; **conteos físicos**; **cierres** mensuales; **auditoría** en la interfaz; **usuarios**; **monedas y tasas de cambio** (COP funcional; ventas y compras en USD, EUR y otras con equivalente en COP); **importación/exportación Excel**; lectores de código; consulta sin conexión. Detalle en [`docs/MODULOS.md`](docs/MODULOS.md). |
+| Base de datos | Flyway `V1`–`V5` (compatibles con datos existentes, idempotentes); disparadores de inmutabilidad y no borrado; `03_pruebas.sql` (30 pruebas) y `04_verificaciones.sql` (saldo = suma de movimientos, lotes, devoluciones, totales). |
 | Validaciones | Bean Validation en DTO (RN-01, RN-06, longitudes, anti `<>`), `@AssertTrue` entre campos, reglas en servicios y restricciones/disparadores de BD; en el cliente, Yup y validación de líneas. |
 | Seguridad | JWT firmado, BCrypt, roles (RF-09) con `@PreAuthorize` en cada endpoint y menú/rutas por rol, bloqueo por fuerza bruta (429), CORS restringido, CSP/X-Frame/nosniff, errores sin trazas, auditoría sin datos sensibles, costos ocultos a roles sin permiso. |
 | Atomicidad y concurrencia | `SELECT … FOR UPDATE` en orden de producto, transacción todo-o-nada (RN-11, RNF-02) y clave de idempotencia por operación. |
 | i18n | Backend: `Accept-Language` + `messages*.properties`; frontend: react-i18next (es/en, persistente). |
 | Documentación | Javadoc, OpenAPI/Swagger, JSDoc (`npm run docs`); cabecera estándar en cada artefacto. |
 | Frontend | MUI + tokens (contraste AA, claro/oscuro), menú lateral por módulos y rol, responsivo (escritorio y móvil), estados de carga/vacío/error, confirmaciones, “saltar al contenido”, carga diferida por ruta. |
-| Pruebas | [`docs/CASOS_DE_PRUEBA.md`](docs/CASOS_DE_PRUEBA.md): 275 casos automatizados (JUnit, Testcontainers, Vitest, Playwright, Selenium, SQL, scripts). |
+| Pruebas | [`docs/CASOS_DE_PRUEBA.md`](docs/CASOS_DE_PRUEBA.md): 293 casos automatizados (JUnit, Testcontainers, Vitest, Playwright, Selenium, SQL, scripts). |
 | CI/CD | GitHub Actions (`.github/workflows/`) y pipeline local con Taiga (`scripts/ci-pipeline.sh`). |
 | Métricas | `docs/METRICAS.md` |
 
@@ -68,14 +68,14 @@ Configure en `.env` `TAIGA_URL/USER/PASSWORD/PROJECT_ID/NOTIFY_IDS` y, opcionalm
 
 ## Estado de verificación (importante)
 Resultados obtenidos en el entorno de desarrollo de la auditoría del 2026-10-16 (sin acceso a Maven Central ni a Docker):
-- **Base de datos:** instalación limpia en PostgreSQL 16 con `init-db.sh` (V1–V4 + seed): 25/25 pruebas SQL en éxito, 0 filas en las verificaciones de integridad; segunda aplicación de las migraciones sin errores.
-- **Frontend:** `npm run build` correcto; **66/66** pruebas Vitest en verde; recorrido de las 23 rutas en Chromium (escritorio y 360 px) con API simulada **solo para esa comprobación local**, sin errores de ejecución ni desbordamiento horizontal.
-- **Backend:** verificación de tipos con `javac` contra un classpath sin conexión (dependencias reales disponibles + stubs de Spring/JPA): 0 errores; **104/110** pruebas unitarias JUnit/Mockito en verde; las 6 restantes (importación Excel) fallan en ese entorno por la versión de Apache POI disponible, no por el código. **No se ha ejecutado `mvn verify`**: las pruebas de integración (Testcontainers) y el arranque real de Spring/Hibernate se validarán en la primera ejecución del workflow `CI`.
+- **Base de datos:** instalación limpia en PostgreSQL 16 con `init-db.sh` (V1–V5 + seed): 30/30 pruebas SQL en éxito, 0 filas en las verificaciones de integridad; segunda aplicación de las migraciones sin errores.
+- **Frontend:** `npm run build` correcto; **73/73** pruebas Vitest en verde; recorrido de las 24 rutas en Chromium (escritorio y 360 px) con API simulada **solo para esa comprobación local**, sin errores de ejecución ni desbordamiento horizontal.
+- **Backend:** verificación de tipos con `javac` contra un classpath sin conexión (dependencias reales disponibles + stubs de Spring/JPA): 0 errores; **113/119** pruebas unitarias JUnit/Mockito en verde; las 6 restantes (importación Excel) fallan en ese entorno por la versión de Apache POI disponible, no por el código. **No se ha ejecutado `mvn verify`**: las pruebas de integración (Testcontainers) y el arranque real de Spring/Hibernate se validarán en la primera ejecución del workflow `CI`.
 - **E2E Playwright, Selenium, k6, PIT y Stryker:** escritos y configurados (E2E en la CI), no ejecutados aquí.
 - **GitHub:** los workflows se validaron con `actionlint`; todavía no se han ejecutado en GitHub ni se ha creado un PR desde este trabajo.
 
 ## Alcance y desviaciones respecto del análisis
-- Pendientes (detalle en `docs/3_levantamiento_consolidado.md`, sección 11): **factura electrónica DIAN** (los documentos son *comprobantes internos* con leyenda explícita; `FacturacionPort` es el punto de integración), rastreo de **número de serie** individual, **anulación de ventas** (se corrige con devolución), recálculo del costo promedio al anular un ingreso y actualización de dependencias de desarrollo del frontend con avisos de seguridad (`npm audit` sin `--omit=dev`).
+- Pendientes (detalle en `docs/3_levantamiento_consolidado.md`, sección 11): **factura electrónica DIAN** (los documentos son *comprobantes internos* con leyenda explícita; `FacturacionPort` es el punto de integración), rastreo de **número de serie** individual, **anulación de ventas** (se corrige con devolución), carga automática de la **TRM** (las tasas de cambio se registran a mano con su fuente), recálculo del costo promedio al anular un ingreso y actualización de dependencias de desarrollo del frontend con avisos de seguridad (`npm audit` sin `--omit=dev`).
 - El primer administrador de una base nueva se crea por SQL (ver la guía); los demás desde **Administración → Usuarios**.
 - Consulta por código: `GET /api/productos/codigo/{codigo}` (el diseño usaba `/{codigoBarras}`, que colisiona con `/{id}`).
 - El autor de las cabeceras es el marcador “Equipo Ferretería” y la fecha de creación de cada archivo: cámbielos con `AUTOR=... FECHA=... python3 scripts/stamp_headers.py` (solo afecta archivos nuevos con la marca `@@`) o con búsqueda/reemplazo.

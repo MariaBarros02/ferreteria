@@ -81,6 +81,22 @@ public class LineaVenta {
     @Column(precision = 16, scale = 2)
     private BigDecimal total;
 
+    /** Importes en la moneda de la venta (iguales a los de COP cuando la venta es en COP). */
+    @Column(name = "precio_moneda", precision = 14, scale = 4)
+    private BigDecimal precioMoneda;
+
+    @Column(name = "subtotal_moneda", precision = 16, scale = 2)
+    private BigDecimal subtotalMoneda;
+
+    @Column(name = "descuento_moneda", precision = 16, scale = 2)
+    private BigDecimal descuentoMoneda;
+
+    @Column(name = "impuesto_moneda", precision = 16, scale = 2)
+    private BigDecimal impuestoMoneda;
+
+    @Column(name = "total_moneda", precision = 16, scale = 2)
+    private BigDecimal totalMoneda;
+
     /** Fin de la garantía cuando el producto la maneja. */
     @Column(name = "garantia_hasta")
     private LocalDate garantiaHasta;

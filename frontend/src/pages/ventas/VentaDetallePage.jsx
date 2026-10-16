@@ -18,7 +18,7 @@ import { useAuth } from '../../auth/AuthContext';
 import EstadoChip from '../../components/EstadoChip';
 import PageHeader from '../../components/PageHeader';
 import useCarga from '../../hooks/useCarga';
-import { cantidad, fecha, fechaHora, moneda, porcentaje } from '../../utils/formato';
+import { cantidad, fecha, fechaHora, moneda as fmtMoneda, porcentaje, tasaTexto } from '../../utils/formato';
 import { mensajeDeError } from '../../utils/mensajes';
 import { puede } from '../../utils/permisos';
 import { leyendaComprobante } from '../../utils/comprobante';
@@ -44,6 +44,10 @@ export default function VentaDetallePage() {
     return (<>{volver}<Alert severity="error" role="alert" action={<Button onClick={recargar}>{t('comun.reintentar')}</Button>}>{mensajeDeError(t, error)}</Alert></>);
   }
   const v = d.venta;
+  const codigo = v.moneda || 'COP';
+  const extranjera = codigo !== 'COP';
+  /** Importe en la moneda de la venta. */
+  const moneda = (n, decimales) => fmtMoneda(n, decimales, codigo);
   const devolvible = v.estado === 'ACTIVO' && v.lineas.some((l) => Number(l.cantidadDevuelta || 0) < Number(l.cantidad));
 
   return (
@@ -86,11 +90,13 @@ export default function VentaDetallePage() {
           <Paper sx={{ p: 2, height: '100%' }}>
             <Typography variant="h6" component="h2" gutterBottom>{t('venta.resumen')}</Typography>
             <Stack gap={1}>
-              <Dato etiqueta={t('venta.subtotal')}>{moneda(v.subtotal, 2)}</Dato>
-              <Dato etiqueta={t('venta.descuentos')}>{moneda(v.totalDescuentos, 2)}</Dato>
-              <Dato etiqueta={t('venta.impuestos')}>{moneda(v.totalImpuestos, 2)}</Dato>
+              <Dato etiqueta={t('moneda.moneda')}>{extranjera ? `${codigo} · ${tasaTexto(codigo, v.tasaCambio)}` : codigo}</Dato>
+              <Dato etiqueta={t('venta.subtotal')}>{moneda(v.subtotalMoneda ?? v.subtotal, 2)}</Dato>
+              <Dato etiqueta={t('venta.descuentos')}>{moneda(v.descuentosMoneda ?? v.totalDescuentos, 2)}</Dato>
+              <Dato etiqueta={t('venta.impuestos')}>{moneda(v.impuestosMoneda ?? v.totalImpuestos, 2)}</Dato>
               <Divider />
-              <Dato etiqueta={t('venta.total')}><strong>{moneda(v.total, 2)}</strong></Dato>
+              <Dato etiqueta={t('venta.total')}><strong>{moneda(v.totalMoneda ?? v.total, 2)}</strong></Dato>
+              {extranjera && <Dato etiqueta={t('moneda.equivalenteCop')}>{fmtMoneda(v.total, 2)}</Dato>}
             </Stack>
           </Paper>
         </Grid>
@@ -118,10 +124,10 @@ export default function VentaDetallePage() {
                     {cantidad(l.cantidad)} {l.unidadBase}
                     {l.unidad && <Typography variant="caption" color="text.secondary" component="div">{cantidad(l.cantidadPresentacion)} {l.unidad}</Typography>}
                   </TableCell>
-                  <TableCell align="right">{moneda(l.precioAplicado, 2)}</TableCell>
-                  <TableCell align="right" sx={{ display: { xs: 'none', md: 'table-cell' } }}>{moneda(l.descuento, 2)} ({porcentaje(l.porcentajeDescuento)})</TableCell>
-                  <TableCell align="right" sx={{ display: { xs: 'none', md: 'table-cell' } }}>{moneda(l.impuesto, 2)} ({porcentaje(l.porcentajeIva)})</TableCell>
-                  <TableCell align="right">{moneda(l.total, 2)}</TableCell>
+                  <TableCell align="right">{moneda(l.precioMoneda ?? l.precioAplicado, 2)}</TableCell>
+                  <TableCell align="right" sx={{ display: { xs: 'none', md: 'table-cell' } }}>{moneda(l.descuentoMoneda ?? l.descuento, 2)} ({porcentaje(l.porcentajeDescuento)})</TableCell>
+                  <TableCell align="right" sx={{ display: { xs: 'none', md: 'table-cell' } }}>{moneda(l.impuestoMoneda ?? l.impuesto, 2)} ({porcentaje(l.porcentajeIva)})</TableCell>
+                  <TableCell align="right">{moneda(l.totalMoneda ?? l.total, 2)}</TableCell>
                   <TableCell sx={{ display: { xs: 'none', md: 'table-cell' } }}>{l.garantiaHasta ? fecha(l.garantiaHasta) : '—'}</TableCell>
                   <TableCell align="right">{Number(l.cantidadDevuelta) > 0 ? <Chip size="small" color="warning" label={cantidad(l.cantidadDevuelta)} /> : '—'}</TableCell>
                 </TableRow>))}
@@ -138,7 +144,7 @@ export default function VentaDetallePage() {
               <Stack gap={1} component="ul" sx={{ pl: 0, listStyle: 'none', m: 0 }}>
                 {d.devoluciones.map((x) => (
                   <li key={x.id}>
-                    <RouterLink to={`/devoluciones/${x.id}`}>{x.numero}</RouterLink> · {fechaHora(x.fecha)} · {moneda(x.total, 2)} · {t(`devolucion.tratamientos.${x.tratamiento}`)}
+                    <RouterLink to={`/devoluciones/${x.id}`}>{x.numero}</RouterLink> · {fechaHora(x.fecha)} · {fmtMoneda(x.total, 2)} · {t(`devolucion.tratamientos.${x.tratamiento}`)}
                   </li>))}
               </Stack>)}
           </Paper>

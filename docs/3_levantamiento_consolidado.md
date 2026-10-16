@@ -1,8 +1,8 @@
 # Levantamiento de requisitos — Sistema de inventario de ferretería
 
-**Versión:** 1.1 (consolidada + auditoría de implementación del 2026-10-16)
+**Versión:** 1.2 (consolidada + auditoría de implementación + monedas, 2026-10-16)
 
-**Estado:** Levantamiento de requisitos cerrado — contradicciones resueltas. La versión 1.1 añade RF-18 a RF-20 (aprobados), RF-21 y RF-22 (identificados en la auditoría, pendientes de aprobación), la matriz de trazabilidad con el estado real de implementación (sección 9), las decisiones de implementación (sección 10) y los pendientes (sección 11).
+**Estado:** Levantamiento de requisitos cerrado — contradicciones resueltas. La versión 1.1 añade RF-18 a RF-20 (aprobados), RF-21 y RF-22 (identificados en la auditoría, pendientes de aprobación), la matriz de trazabilidad con el estado real de implementación (sección 9), las decisiones de implementación (sección 10) y los pendientes (sección 11). La versión 1.2 añade RF-23 (monedas y tasas de cambio, solicitado por el interesado) y la regla RN-17 (moneda funcional COP).
 
 **Fuentes:**
 - `levantamiento_inventario_ferreteria.md` (v0.3) — preguntas, respuestas del interesado y fichas RF-01 a RF-17.
@@ -102,6 +102,7 @@ Ejemplo de unidad base (tornillo, unidad base = unidad; caja = 100, paquete = 10
 | RN-14 | La numeración fiscal de factura (rangos/numeración autorizada por la DIAN) es **distinta** del número interno de venta; la modalidad principal es factura electrónica conforme a la normativa vigente, y la factura de papel solo se usa en los escenarios legalmente permitidos. |
 | RN-15 | Ningún dato del Excel de origen se importa directamente: pasa por validación, detección de errores y de posibles duplicados, revisión de un usuario y consolidación, antes de la importación definitiva. |
 | RN-16 | Un movimiento histórico nunca se modifica directamente; su corrección se realiza mediante una **nota de ajuste** que genera un nuevo movimiento vinculado al original, conservando ambos en la auditoría. |
+| RN-17 | **Moneda funcional COP.** Inventario, costos promedio, precios aprobados, cierres, conciliación y auditoría se llevan en pesos colombianos. Una venta o compra puede emitirse en otra moneda activa (USD, EUR u otras ISO 4217) con la **tasa de cambio vigente** del día (COP por 1 unidad, con fecha y fuente); el documento conserva la moneda, la tasa aplicada, sus importes en esa moneda y el equivalente en COP. Una tasa registrada no se modifica: una corrección es una tasa nueva y nunca altera documentos ya emitidos. |
 
 ---
 
@@ -580,6 +581,27 @@ Ejemplo de unidad base (tornillo, unidad base = unidad; caja = 100, paquete = 10
 | **Estado** | Propuesto e implementado — requiere aprobación del interesado |
 
 
+### RF-23 — Gestionar monedas y tasas de cambio (solicitado por el interesado el 2026-10-16)
+
+| Campo | Información |
+|---|---|
+| **Código** | RF-23 |
+| **Versión** | 1.0 |
+| **Descripción** | El sistema deberá permitir operar en varias monedas (COP, USD, EUR, MXN, PEN, BRL y otras ISO 4217 que se registren): mantener el catálogo de monedas, registrar tasas de cambio con fecha de vigencia y fuente, emitir ventas y compras en la moneda elegida convirtiendo con la tasa vigente, mostrar el equivalente en COP y convertir montos entre monedas. |
+| **Justificación** | Atender clientes y proveedores que negocian en moneda extranjera (importaciones en USD, clientes del exterior) sin perder la contabilidad del inventario en la moneda funcional (RN-17). |
+| **Precondiciones** | La moneda está activa y tiene una tasa vigente (fecha de vigencia ≤ hoy en la zona horaria del negocio); usuario autorizado (RF-09). |
+| **Restricciones** | COP es la única moneda funcional, siempre con tasa 1, y no se desactiva; las tasas son positivas (hasta 6 decimales), no se registran con fecha futura y son inmutables; las devoluciones, el costo promedio y los cierres se valoran en COP; sin conexión no se emiten documentos (RN-10). No se consulta automáticamente la TRM: la tasa la registra un usuario con su fuente. |
+| **Prioridad** | Alta |
+| **Dependencias** | RF-03, RF-04, RF-07, RF-08, RF-09, RF-19, RN-14, RN-17 |
+| **Actores** | Gerencia y administrador (monedas y tasas); ventas y compras (documentos en moneda extranjera); todos los roles (consulta y conversor). |
+| **Entradas** | Moneda (código, nombre, símbolo, decimales); tasa (COP por 1 unidad, fecha de vigencia, fuente); moneda del documento al vender o comprar. |
+| **Proceso** | Venta: precio vigente en COP ÷ tasa (4 decimales) → importes de cada línea en la moneda del documento (subtotal, descuento, IVA, total con redondeo HALF_UP a 2 decimales) → equivalente en COP de cada importe = importe × tasa. Compra: costo en la moneda del proveedor → costo pactado en COP = costo × tasa de la orden, que alimenta el costo promedio al recibir. Conversión libre: monto × tasa origen ÷ tasa destino. |
+| **Salida** | Documento con moneda, tasa, importes en ambas monedas; comprobante y PDF con la tasa y el equivalente en COP; historial de tasas; resultado de conversión. |
+| **Postcondiciones** | Cada registro de tasa queda en la auditoría (módulo MONEDAS); los documentos emitidos conservan su tasa aunque luego se registren tasas nuevas. |
+| **Criterios de aceptación** | Con 1 USD = 4.000 COP, un producto de 650.000 COP se vende a 162,50 USD y la venta guarda 650.000 COP como equivalente; sin tasa vigente la venta en USD se rechaza sin tocar inventario; COP no admite tasa; una tasa registrada no puede editarse. |
+| **Requisitos no funcionales** | RNF-02, RNF-03, RNF-06 |
+| **Estado** | Aprobado (solicitud del interesado) — implementado |
+
 ---
 
 ## 5. Requisitos no funcionales (ISO/IEC 25010:2023)
@@ -637,6 +659,7 @@ El alcance queda delimitado para no convertir el proyecto en un ERP de inventari
 - Documentos anulados, nunca eliminados.
 - Auditoría de todas las operaciones, con corrección mediante nota de ajuste.
 - Facturación electrónica conforme a la normativa DIAN vigente.
+- Contabilidad del inventario en COP (moneda funcional), con ventas y compras emitibles en otras monedas mediante tasas de cambio trazables (RF-23, RN-17).
 - Sin transacciones confirmadas sin conexión a internet.
 - Capacidad dimensionada por escenarios de carga, no como "sin límite".
 
@@ -650,7 +673,7 @@ Leyenda del estado:
 - **Implementado** — código en backend y frontend conectado a la API real, con pruebas automatizadas escritas.
 - **Parcial** — implementado con una limitación documentada en la sección 11.
 
-Verificación disponible en el entorno de la auditoría (ver sección 11, P-01): pruebas de base de datos en PostgreSQL 16 real (25/25), pruebas Vitest del frontend (66/66), build de producción del frontend, verificación de tipos del backend y pruebas unitarias JUnit/Mockito del backend ejecutadas con un classpath sin conexión (104/110; las 6 restantes fallan por la versión de Apache POI disponible en ese entorno, no por el código). Las pruebas de integración (`*IT`, Testcontainers) y E2E (Playwright) están escritas y configuradas en GitHub Actions, pero **no se ejecutaron todavía**.
+Verificación disponible en el entorno de la auditoría (ver sección 11, P-01): pruebas de base de datos en PostgreSQL 16 real (30/30), pruebas Vitest del frontend (73/73), build de producción del frontend, verificación de tipos del backend y pruebas unitarias JUnit/Mockito del backend ejecutadas con un classpath sin conexión (113/119; las 6 restantes fallan por la versión de Apache POI disponible en ese entorno, no por el código). Las pruebas de integración (`*IT`, Testcontainers) y E2E (Playwright) están escritas y configuradas en GitHub Actions, pero **no se ejecutaron todavía**.
 
 | ID | Requisito | Estado antes | Estado actual | Backend (principal) | Frontend | BD | Pruebas |
 |---|---|---|---|---|---|---|---|
@@ -676,8 +699,9 @@ Verificación disponible en el entorno de la auditoría (ver sección 11, P-01):
 | RF-20 | Auditoría en la interfaz | No implementado | Implementado | `AuditoriaController` (`/eventos`, `/movimientos`) | `AuditoriaPage` | — | IT-ADM-01/07, E2E-ROL-03 |
 | RF-21 | Reservas de inventario (nuevo) | No implementado | Implementado | `ReservaService`, `TareasProgramadas` | `InventarioPage` (Reservas), `VentaNuevaPage` | V4 (`reserva.*`) | UT-VEN-18 |
 | RF-22 | Exportación a Excel (nuevo) | No implementado | Implementado | `ExportacionService` | `BotonDescarga` en listados | — | UT-IMP-08, IT-ADM-04 |
+| RF-23 | Monedas y tasas de cambio (solicitado) | No implementado | Implementado: catálogo ISO 4217 (COP funcional, USD, EUR, MXN, PEN, BRL y altas), tasas inmutables con vigencia y fuente, ventas y compras en moneda extranjera con equivalente COP, comprobante/PDF con tasa, conversor | `MonedaService`, `MonedaController`, `VentaService`, `CompraService` | `MonedasPage`, `SelectorMoneda`, `VentaNuevaPage`, `CompraNuevaPage`, comprobante | V5 (`moneda`, `tasa_cambio`, columnas `*_moneda`, `tasa_cambio` en venta/compra) | UT-MON-01..06, UT-VEN-19/20, UT-COM-11, IT-ADM-08, FE-MON-01..07, E2E-MON-01, pruebas SQL 21 y 22 |
 
-Reglas de negocio con soporte de base de datos (disparadores y restricciones) y verificaciones de integridad: `database/03_pruebas.sql` (25 pruebas) y `database/04_verificaciones.sql` (saldo por estado = suma de movimientos, lotes ≤ inventario, devoluciones ≤ vendido, totales de ventas, sin autoaprobación de precios).
+Reglas de negocio con soporte de base de datos (disparadores y restricciones) y verificaciones de integridad: `database/03_pruebas.sql` (30 pruebas) y `database/04_verificaciones.sql` (saldo por estado = suma de movimientos, lotes ≤ inventario, devoluciones ≤ vendido, totales de ventas en COP y en la moneda del documento, coherencia de moneda y tasa, una sola moneda funcional, sin autoaprobación de precios).
 
 ## 10. Decisiones de implementación
 
@@ -694,6 +718,9 @@ Reglas de negocio con soporte de base de datos (disparadores y restricciones) y 
 | D-9 | Sin conexión | Solo consulta (RN-10): copia del catálogo en IndexedDB, sin cola de escrituras; se borra al cerrar sesión. |
 | D-10 | Excel | Nunca se importa directo (RN-15); el mismo archivo (SHA-256) no se reimporta; exportaciones neutralizan fórmulas y se auditan. |
 | D-11 | Segregación de funciones | Precios, ajustes y conteos no los decide quien los propuso, solicitó o inició. |
+| D-12 | Moneda funcional y documentos multimoneda | COP es la moneda funcional (RN-17). Las columnas históricas de importes siguen en COP (inventario, cierres, verificaciones y reportes no cambian); los importes en la moneda del documento se guardan en columnas `*_moneda` junto con `moneda` y `tasa_cambio`. Los documentos anteriores quedan en COP con tasa 1. |
+| D-13 | Cálculo en moneda extranjera | El documento se calcula en su moneda (precio COP ÷ tasa con 4 decimales; importes con 2 decimales HALF_UP) y cada importe se convierte a COP (× tasa, 2 decimales). El total en COP es la suma de esos equivalentes; puede diferir en centavos del cálculo directo en COP. |
+| D-14 | Tasas de cambio | COP por 1 unidad, con fecha de vigencia (≤ hoy) y fuente; inmutables (disparador); la vigente es la de fecha más reciente y, el mismo día, la última registrada. Las compras fijan la tasa de la orden y la usan en todas sus recepciones. No se consulta la TRM automáticamente (no se simulan integraciones externas). |
 
 ## 11. Pendientes y limitaciones
 
@@ -707,3 +734,5 @@ Reglas de negocio con soporte de base de datos (disparadores y restricciones) y 
 | P-06 | Avisos de seguridad en dependencias de desarrollo del frontend (vitest/vite/stryker) | Versiones mayores con cambios incompatibles | No afectan la imagen de producción; la CI audita solo dependencias de producción | Actualizar vitest/vite/stryker en una rama dedicada |
 | P-07 | Aprobación de RF-21 y RF-22 | Requisitos identificados en la auditoría | Implementados sin aprobación formal | Validarlos con el interesado |
 | P-08 | Protección de `main` y permiso de Actions para crear PR | Configuración del repositorio en GitHub | Sin ella, la CI no bloquea fusiones y el workflow de PR automático no puede crear PR | Ver `docs/GUIA_INICIO.md`, sección 11 |
+| P-09 | Carga automática de la TRM | Requiere integrar un servicio externo (p. ej. datos abiertos del Banco de la República) con disponibilidad y credenciales a definir | Las tasas se registran manualmente con su fuente | Implementar un proceso programado que registre la tasa del día con fuente “TRM” usando `MonedaService.registrarTasa` |
+| P-10 | Documento fiscal en moneda extranjera | La factura electrónica DIAN (P-02) no está integrada | El comprobante interno muestra la moneda, la tasa y el equivalente en COP, sin validez fiscal | Incluir moneda y TRM en el adaptador fiscal cuando se implemente P-02 |

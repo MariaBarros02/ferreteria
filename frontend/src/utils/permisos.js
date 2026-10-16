@@ -45,6 +45,7 @@ export const PERMISOS = {
   'importacion.terceros': [C, V, A],
   'exportar.terceros': [C, V, A],
   'exportar.movimientos': [I, A, G],
+  'monedas.gestionar': [G, A],
 };
 
 /**

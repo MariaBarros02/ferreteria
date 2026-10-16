@@ -9,7 +9,7 @@
 import { useState } from 'react';
 import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { Button, Chip, MenuItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow,
-  TextField } from '@mui/material';
+  TextField, Typography } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import { useTranslation } from 'react-i18next';
 import { api } from '../../api/http';
@@ -77,7 +77,10 @@ export default function VentasPage() {
                     <EstadoChip estado={v.estado} />
                     {v.tieneDevoluciones && <Chip size="small" variant="outlined" sx={{ ml: 0.5 }} label={t('venta.conDevoluciones')} />}
                   </TableCell>
-                  <TableCell align="right">{moneda(v.total)}</TableCell>
+                  <TableCell align="right">
+                    {moneda(v.totalMoneda ?? v.total, undefined, v.moneda || 'COP')}
+                    {v.moneda && v.moneda !== 'COP' && <Typography variant="caption" color="text.secondary" component="div">{moneda(v.total)}</Typography>}
+                  </TableCell>
                 </TableRow>))}
             </TableBody>
           </Table>

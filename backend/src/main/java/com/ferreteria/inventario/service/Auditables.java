@@ -24,6 +24,7 @@ public final class Auditables {
     /** Módulo cierres. */ public static final String CIERRES = "CIERRES";
     /** Módulo usuarios. */ public static final String USUARIOS = "USUARIOS";
     /** Módulo importación. */ public static final String IMPORTACION = "IMPORTACION";
+    /** Módulo monedas y tasas de cambio. */ public static final String MONEDAS = "MONEDAS";
 
     /** Creación. */ public static final String CREAR = "CREAR";
     /** Actualización. */ public static final String ACTUALIZAR = "ACTUALIZAR";
@@ -52,14 +53,15 @@ public final class Auditables {
     /** Validación de archivo. */ public static final String VALIDAR = "VALIDAR";
     /** Cancelación. */ public static final String CANCELAR = "CANCELAR";
     /** Exportación de datos. */ public static final String EXPORTAR = "EXPORTAR";
+    /** Registro de tasa de cambio. */ public static final String TASA_CAMBIO = "TASA_CAMBIO";
 
     /** Módulos disponibles para filtrar. */
     public static final List<String> MODULOS = List.of(PRODUCTOS, TERCEROS, COMPRAS, VENTAS, INVENTARIO, PRECIOS,
-            CIERRES, USUARIOS, IMPORTACION);
+            CIERRES, USUARIOS, IMPORTACION, MONEDAS);
     /** Acciones disponibles para filtrar. */
     public static final List<String> ACCIONES = List.of(CREAR, ACTUALIZAR, ELIMINAR, DESACTIVAR, ACTIVAR, ANULAR, VENTA,
             RECEPCION, DEVOLUCION, SOLICITAR, APROBAR, RECHAZAR, PROPONER, AJUSTE, CONTEO, CERRAR, REABRIR, RESERVAR,
-            LIBERAR, CAMBIO_ESTADO, BAJA_VENCIMIENTO, CAMBIO_ROL, RESTABLECER_CLAVE, VALIDAR, IMPORTAR, CANCELAR, EXPORTAR);
+            LIBERAR, CAMBIO_ESTADO, BAJA_VENCIMIENTO, CAMBIO_ROL, RESTABLECER_CLAVE, VALIDAR, IMPORTAR, CANCELAR, EXPORTAR, TASA_CAMBIO);
 
     private Auditables() { }
 }

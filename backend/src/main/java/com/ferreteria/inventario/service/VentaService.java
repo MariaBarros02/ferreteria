@@ -1,10 +1,10 @@
 /*
  * Nombre: VentaService.java
- * Descripción: Registro atómico de ventas (RF-04): precio vigente aprobado, conversión de unidades, descuento autorizado, IVA, lotes FEFO, reservas, garantía, factura e idempotencia.
+ * Descripción: Registro atómico de ventas (RF-04): precio vigente aprobado, conversión de unidades, descuento autorizado, IVA, lotes FEFO, reservas, garantía, moneda del documento con tasa de cambio (RF-23), factura e idempotencia.
  * Fecha de creación: 2026-10-07
  * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.1.0
+ * Versión: 1.2.0
  */
 package com.ferreteria.inventario.service;
 
@@ -44,6 +44,10 @@ import org.springframework.transaction.annotation.Transactional;
  * <p>
  * Los importes los calcula siempre el servidor: precio = último precio aprobado vigente (RN-07), descuento por
  * línea limitado por {@code app.ventas.descuento-maximo}, IVA = porcentaje del producto (ver {@link Montos}).
+ * <p>
+ * Moneda (RF-23, RN-17): si la venta es en otra moneda, el precio en COP se convierte con la tasa vigente
+ * ({@link MonedaService#aMonedaDocumento}); los importes se calculan en la moneda del documento y su equivalente
+ * en COP ({@link MonedaService#aFuncional}) se guarda en las columnas de siempre, que usan inventario y cierres.
  */
 @Service
 @RequiredArgsConstructor
@@ -63,6 +67,7 @@ public class VentaService {
     private final LoteService lotes;
     private final EventoAuditoriaService eventos;
     private final ParametrosNegocio parametros;
+    private final MonedaService monedas;
 
     /**
      * Registra una venta y emite su factura.
@@ -93,6 +98,7 @@ public class VentaService {
         Actor actor = new Actor(usuario.getId(), usuario.getCorreo(), ip);
         LocalDateTime ahora = kardex.ahora();
         LocalDate hoy = kardex.hoy();
+        MonedaService.Cambio cambio = monedas.cambioParaDocumento(req.moneda());
 
         Venta venta = ventas.save(Venta.builder()
                 .numeroInterno(String.format("VTA-%06d", ventas.siguienteNumeroVenta()))
@@ -101,6 +107,7 @@ public class VentaService {
                 .estado(EstadoDocumento.ACTIVO)
                 .idUsuario(usuario.getId())
                 .idOperacion(req.idOperacion())
+                .moneda(cambio.moneda()).tasaCambio(cambio.tasa())
                 .observaciones(req.observaciones() == null || req.observaciones().isBlank() ? null : req.observaciones().trim())
                 .build());
         String doc = venta.getNumeroInterno();
@@ -109,6 +116,7 @@ public class VentaService {
                 .sorted(Comparator.comparing(VentaRequest.Linea::productoId)).toList();
         Map<LineaVenta, List<LoteService.Asignacion>> asignaciones = new LinkedHashMap<>();
         List<Montos.Linea> importes = new ArrayList<>();
+        List<Montos.Linea> importesMoneda = new ArrayList<>();
 
         for (VentaRequest.Linea l : ordenadas) {
             Producto p = productos.findById(l.productoId()).orElseThrow(() -> ApiException.noEncontrado("Producto"));
@@ -137,13 +145,18 @@ public class VentaService {
                 consumirReserva(reserva, inv, cantidadBase, venta, actor, doc);
             }
 
-            Montos.Linea m = Montos.linea(cantidadBase, precio.getPrecioVigente(), descuento, p.getPorcentajeIva());
+            BigDecimal precioMoneda = MonedaService.aMonedaDocumento(precio.getPrecioVigente(), cambio.tasa());
+            Montos.Linea mx = Montos.linea(cantidadBase, precioMoneda, descuento, p.getPorcentajeIva());
+            Montos.Linea m = enFuncional(mx, cambio.tasa());
             importes.add(m);
+            importesMoneda.add(mx);
             LineaVenta lv = LineaVenta.builder().venta(venta).idProducto(p.getId())
                     .cantidad(cantidadBase).precioAplicado(precio.getPrecioVigente())
                     .unidad(conv.unidad()).cantidadPresentacion(conv.unidad() == null ? null : l.cantidad())
                     .porcentajeDescuento(descuento).porcentajeIva(p.getPorcentajeIva())
                     .subtotal(m.subtotal()).descuento(m.descuento()).impuesto(m.impuesto()).total(m.total())
+                    .precioMoneda(precioMoneda).subtotalMoneda(mx.subtotal()).descuentoMoneda(mx.descuento())
+                    .impuestoMoneda(mx.impuesto()).totalMoneda(mx.total())
                     .garantiaHasta(p.isTieneGarantia() && p.getMesesGarantia() != null ? hoy.plusMonths(p.getMesesGarantia()) : null)
                     .build();
             venta.getLineas().add(lv);
@@ -154,6 +167,11 @@ public class VentaService {
         venta.setTotalDescuentos(t.descuentos());
         venta.setTotalImpuestos(t.impuestos());
         venta.setTotal(t.total());
+        Montos.Totales tx = Montos.totales(importesMoneda);
+        venta.setSubtotalMoneda(tx.subtotal());
+        venta.setDescuentosMoneda(tx.descuentos());
+        venta.setImpuestosMoneda(tx.impuestos());
+        venta.setTotalMoneda(tx.total());
         venta = ventas.save(venta);
         for (Map.Entry<LineaVenta, List<LoteService.Asignacion>> e : asignaciones.entrySet()) {
             for (LoteService.Asignacion a : e.getValue()) {
@@ -177,6 +195,12 @@ public class VentaService {
         d.put("descuentos", t.descuentos());
         d.put("impuestos", t.impuestos());
         d.put("total", t.total());
+        d.put("moneda", cambio.moneda());
+        if (!cambio.esFuncional()) {
+            d.put("tasaCambio", cambio.tasa());
+            d.put("fechaTasa", String.valueOf(cambio.fechaTasa()));
+            d.put("totalMoneda", tx.total());
+        }
         d.put("factura", factura.getNumeracionDian());
         eventos.registrar(actor, Auditables.VENTAS, Auditables.VENTA, "VENTA", venta.getId(),
                 "Venta " + doc + " a " + TerceroResponse.nombreDe(cliente), d);
@@ -217,6 +241,17 @@ public class VentaService {
      */
     BigDecimal aUnidadBase(Producto p, VentaRequest.Linea l) {
         return unidades.aUnidadBase(p, l.cantidad(), l.unidad()).cantidadBase();
+    }
+
+    /** Equivalente en COP de los importes de una línea calculados en la moneda del documento. */
+    static Montos.Linea enFuncional(Montos.Linea x, BigDecimal tasa) {
+        if (tasa.compareTo(BigDecimal.ONE) == 0) {
+            return x;
+        }
+        BigDecimal subtotal = MonedaService.aFuncional(x.subtotal(), tasa);
+        BigDecimal descuento = MonedaService.aFuncional(x.descuento(), tasa);
+        BigDecimal impuesto = MonedaService.aFuncional(x.impuesto(), tasa);
+        return new Montos.Linea(subtotal, descuento, impuesto, subtotal.subtract(descuento).add(impuesto));
     }
 
     private Optional<Precio> vigente(Long idProducto) {

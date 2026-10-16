@@ -17,7 +17,7 @@ import { useTranslation } from 'react-i18next';
 import { api } from '../../api/http';
 import { useNotify } from '../../components/Notifier';
 import useCarga from '../../hooks/useCarga';
-import { cantidad, fecha, fechaHora, moneda } from '../../utils/formato';
+import { cantidad, fecha, fechaHora, moneda as fmtMoneda, tasaTexto } from '../../utils/formato';
 import { mensajeDeError } from '../../utils/mensajes';
 import { leyendaComprobante, nombreArchivoComprobante, tituloComprobante, unir } from '../../utils/comprobante';
 
@@ -33,6 +33,9 @@ export default function ComprobantePage() {
   if (error) return (<>{volver}<Alert severity="error" role="alert" action={<Button onClick={recargar}>{t('comun.reintentar')}</Button>}>{mensajeDeError(t, error)}</Alert></>);
 
   const { venta: v, cliente, empresa } = d;
+  const codigo = v.moneda || 'COP';
+  const extranjera = codigo !== 'COP';
+  const moneda = (n, decimales) => fmtMoneda(n, decimales, codigo);
   const pdf = async () => {
     setGenerando(true);
     try {
@@ -71,6 +74,7 @@ export default function ComprobantePage() {
             <Typography variant="body2">{t('comprobante.numeroInterno')}: {v.numeroInterno}</Typography>
             <Typography variant="body2">{t('comprobante.numeracion')}: {v.factura?.numeracionDian ?? '—'}</Typography>
             <Typography variant="body2">{t('comprobante.fecha')}: {fechaHora(v.factura?.fechaEmision || v.fecha)}</Typography>
+            <Typography variant="body2">{t('moneda.moneda')}: {codigo}{extranjera ? ` · ${tasaTexto(codigo, v.tasaCambio)}` : ''}</Typography>
           </Box>
         </Stack>
         <Divider sx={{ my: 2 }} />
@@ -95,19 +99,20 @@ export default function ComprobantePage() {
                     {l.garantiaHasta && <Typography variant="caption" component="div">{t('comprobante.garantiaHasta')}: {fecha(l.garantiaHasta)}</Typography>}
                   </TableCell>
                   <TableCell align="right">{l.unidad ? `${cantidad(l.cantidadPresentacion)} ${l.unidad}` : `${cantidad(l.cantidad)} ${l.unidadBase ?? ''}`}</TableCell>
-                  <TableCell align="right">{moneda(l.precioAplicado, 2)}</TableCell>
-                  <TableCell align="right">{moneda(l.descuento, 2)}</TableCell>
-                  <TableCell align="right">{moneda(l.impuesto, 2)}</TableCell>
-                  <TableCell align="right">{moneda(l.total, 2)}</TableCell>
+                  <TableCell align="right">{moneda(l.precioMoneda ?? l.precioAplicado, 2)}</TableCell>
+                  <TableCell align="right">{moneda(l.descuentoMoneda ?? l.descuento, 2)}</TableCell>
+                  <TableCell align="right">{moneda(l.impuestoMoneda ?? l.impuesto, 2)}</TableCell>
+                  <TableCell align="right">{moneda(l.totalMoneda ?? l.total, 2)}</TableCell>
                 </TableRow>))}
             </TableBody>
           </Table>
         </Box>
         <Stack alignItems="flex-end" sx={{ mt: 2 }} gap={0.5}>
-          <Typography variant="body2">{t('comprobante.subtotal')}: {moneda(v.subtotal, 2)}</Typography>
-          <Typography variant="body2">{t('comprobante.descuentos')}: {moneda(v.totalDescuentos, 2)}</Typography>
-          <Typography variant="body2">{t('comprobante.impuestos')}: {moneda(v.totalImpuestos, 2)}</Typography>
-          <Typography variant="h6" component="p" sx={{ fontWeight: 700 }}>{t('comprobante.total')}: {moneda(v.total, 2)}</Typography>
+          <Typography variant="body2">{t('comprobante.subtotal')}: {moneda(v.subtotalMoneda ?? v.subtotal, 2)}</Typography>
+          <Typography variant="body2">{t('comprobante.descuentos')}: {moneda(v.descuentosMoneda ?? v.totalDescuentos, 2)}</Typography>
+          <Typography variant="body2">{t('comprobante.impuestos')}: {moneda(v.impuestosMoneda ?? v.totalImpuestos, 2)}</Typography>
+          <Typography variant="h6" component="p" sx={{ fontWeight: 700 }} data-testid="comprobante-total">{t('comprobante.total')}: {moneda(v.totalMoneda ?? v.total, 2)}</Typography>
+          {extranjera && <Typography variant="body2" data-testid="comprobante-equivalente">{t('moneda.equivalenteCop')}: {fmtMoneda(v.total, 2)}</Typography>}
         </Stack>
         {v.observaciones && <Typography variant="body2" sx={{ mt: 1 }}>{t('comprobante.observaciones')}: {v.observaciones}</Typography>}
         <Typography variant="body2" sx={{ mt: 1 }}>{t('comprobante.atendio')}: {d.usuarioNombre ?? '—'}</Typography>

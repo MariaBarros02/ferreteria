@@ -96,10 +96,10 @@ public class VentaConsultaService {
                     k -> terceros.findById(k).map(TerceroResponse::nombreDe).orElse(""));
             String correo = v.getIdUsuario() == null ? null : correos.computeIfAbsent(v.getIdUsuario(),
                     k -> usuarios.findById(k).map(Usuario::getCorreo).orElse(""));
-            BigDecimal total = VentaResponse.de(v, fa).total();
+            VentaResponse r = VentaResponse.de(v, fa);
             return new VentaResumenResponse(v.getId(), v.getNumeroInterno(), fa == null ? null : fa.getNumeracionDian(),
-                    v.getFecha(), v.getIdCliente(), cliente, correo, v.getEstado(), total,
-                    !documentosDevolucion.findByIdVentaOrderByIdAsc(v.getId()).isEmpty());
+                    v.getFecha(), v.getIdCliente(), cliente, correo, v.getEstado(), r.total(),
+                    !documentosDevolucion.findByIdVentaOrderByIdAsc(v.getId()).isEmpty(), r.moneda(), r.totalMoneda());
         });
     }
 

@@ -56,6 +56,10 @@ public class LineaCompra {
     @Column(name = "cantidad_presentacion", precision = 14, scale = 4)
     private BigDecimal cantidadPresentacion;
 
+    /** Costo por unidad base en la moneda de la compra; costoPactado es su equivalente en COP. */
+    @Column(name = "costo_moneda", precision = 14, scale = 4)
+    private BigDecimal costoMoneda;
+
     /** Costo por presentación. */
     @Column(name = "costo_presentacion", precision = 14, scale = 4)
     private BigDecimal costoPresentacion;

@@ -69,6 +69,28 @@ public class Venta {
     private BigDecimal total;
 
     /** Observaciones de la venta. */
+    /** Moneda del documento (ISO 4217); COP por defecto (RN-17). */
+    @Column(name = "moneda", nullable = false, length = 3, columnDefinition = "bpchar(3)")
+    @Builder.Default
+    private String moneda = "COP";
+
+    /** Pesos colombianos por 1 unidad de la moneda del documento (1 en COP). */
+    @Column(name = "tasa_cambio", nullable = false, precision = 18, scale = 6)
+    @Builder.Default
+    private BigDecimal tasaCambio = BigDecimal.ONE;
+
+    @Column(name = "subtotal_moneda", precision = 16, scale = 2)
+    private BigDecimal subtotalMoneda;
+
+    @Column(name = "descuentos_moneda", precision = 16, scale = 2)
+    private BigDecimal descuentosMoneda;
+
+    @Column(name = "impuestos_moneda", precision = 16, scale = 2)
+    private BigDecimal impuestosMoneda;
+
+    @Column(name = "total_moneda", precision = 16, scale = 2)
+    private BigDecimal totalMoneda;
+
     @Column(length = 255)
     private String observaciones;
 

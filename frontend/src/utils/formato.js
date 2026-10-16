@@ -1,15 +1,34 @@
 /*
  * Nombre: formato.js
- * Descripción: Formateo de moneda (COP), cantidades, fechas locales y fechas UTC del backend.
+ * Descripción: Formateo de importes en cualquier moneda ISO 4217 (COP por defecto), tasas de cambio, cantidades, fechas locales y fechas UTC del backend.
  * Fecha de creación: 2026-10-16
  * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 
-/** Moneda colombiana sin decimales (los importes se guardan con 2 decimales en el servidor). */
-export const moneda = (n, decimales = 0) => (n === null || n === undefined || n === '' ? '—'
-  : new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', minimumFractionDigits: decimales, maximumFractionDigits: decimales }).format(Number(n)));
+/** Decimales de presentación por moneda (COP sin decimales; el servidor guarda 2). */
+const DECIMALES = { COP: 0, CLP: 0, JPY: 0 };
+
+/**
+ * Importe con el formato de su moneda ISO 4217 (COP por defecto, RF-23).
+ * @param {number|string} n importe
+ * @param {number} [decimales] decimales a mostrar (por defecto, los de la moneda)
+ * @param {string} [codigo] código de la moneda
+ */
+export const moneda = (n, decimales, codigo = 'COP') => {
+  if (n === null || n === undefined || n === '') return '—';
+  const d = decimales ?? DECIMALES[codigo] ?? 2;
+  try {
+    return new Intl.NumberFormat('es-CO', { style: 'currency', currency: codigo || 'COP', minimumFractionDigits: d, maximumFractionDigits: d }).format(Number(n));
+  } catch {
+    return `${codigo} ${new Intl.NumberFormat('es-CO', { minimumFractionDigits: d, maximumFractionDigits: d }).format(Number(n))}`;
+  }
+};
+
+/** Tasa de cambio legible: "1 USD = 4.000,00 COP". */
+export const tasaTexto = (codigo, tasa) => (tasa === null || tasa === undefined ? '—'
+  : `1 ${codigo} = ${new Intl.NumberFormat('es-CO', { maximumFractionDigits: 6, minimumFractionDigits: 2 }).format(Number(tasa))} COP`);
 
 /** Cantidad con hasta 4 decimales, sin ceros sobrantes. */
 export const cantidad = (n) => (n === null || n === undefined || n === '' ? '—'
