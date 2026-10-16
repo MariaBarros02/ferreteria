@@ -2,9 +2,9 @@
  * Nombre: schemas.js
  * Descripción: Esquemas Yup de validación de formularios (producto, tercero, login, venta) alineados con las reglas del backend.
  * Fecha de creación: 2026-10-07
- * Fecha de actualización: 2026-10-07
+ * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 import * as yup from 'yup';
 
@@ -37,6 +37,21 @@ export const textoObligatorio = (max) =>
 export const textoOpcional = (max) =>
   yup.string().trim().max(max, msgMax(max)).matches(SIN_HTML, { message: 'errores.sinHtml', excludeEmptyString: true });
 
+/**
+ * Número decimal opcional (texto de formulario) dentro de un rango y con decimales limitados.
+ * @param {number} min mínimo
+ * @param {number} max máximo
+ * @param {number} decimales decimales permitidos
+ * @returns {yup.MixedSchema} Esquema.
+ */
+export const decimalOpcional = (min, max, decimales) => yup.mixed().test('decimal', 'errores.rango', (v) => {
+  const s = String(v ?? '').trim().replace(',', '.');
+  if (!s) return true;
+  if (!new RegExp(`^\\d+(\\.\\d{1,${decimales}})?$`).test(s)) return false;
+  const n = Number(s);
+  return n >= min && n <= max;
+});
+
 /** Esquema del formulario de inicio de sesión. */
 export const loginSchema = yup.object({
   correo: yup.string().trim().required('errores.obligatorio').email('errores.correo').max(150, msgMax(150)),
@@ -51,8 +66,19 @@ export const productoSchema = yup.object({
   codigoBarras: yup.string().trim().required('errores.obligatorio').matches(CODIGO_BARRAS, 'errores.codigoBarras'),
   unidadBase: textoObligatorio(20),
   tipoRastreo: yup.string().oneOf(['NINGUNO', 'LOTE', 'SERIE']).required('errores.obligatorio'),
-  tieneVencimiento: yup.boolean(),
+  tieneVencimiento: yup.boolean().test('vence-lote', 'errores.vencimientoLote',
+    function (v) { return !v || this.parent.tipoRastreo === 'LOTE'; }),
   tieneGarantia: yup.boolean(),
+  descripcion: textoOpcional(500),
+  categoria: textoOpcional(100),
+  porcentajeIva: decimalOpcional(0, 100, 2),
+  porcentajeIncremento: decimalOpcional(0, 99.99, 2),
+  stockMinimo: decimalOpcional(0, 9999999999, 4),
+  mesesGarantia: yup.mixed().test('garantia', 'errores.mesesGarantia', function (v) {
+    if (!this.parent.tieneGarantia) return true;
+    const s = String(v ?? '').trim();
+    return /^\d{1,3}$/.test(s) && Number(s) >= 1 && Number(s) <= 120;
+  }),
 });
 
 /** Esquema del formulario de tercero con reglas condicionales por tipo de persona (RN-06). */

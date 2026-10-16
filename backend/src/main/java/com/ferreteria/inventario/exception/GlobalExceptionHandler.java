@@ -2,9 +2,9 @@
  * Nombre: GlobalExceptionHandler.java
  * Descripción: Manejador global de errores: respuestas JSON {codigo, mensaje} internacionalizadas, sin filtrar detalles internos.
  * Fecha de creación: 2026-10-07
- * Fecha de actualización: 2026-10-07
+ * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 package com.ferreteria.inventario.exception;
 
@@ -79,6 +79,20 @@ public class GlobalExceptionHandler {
     ResponseEntity<ErrorResponse> integridad(DataIntegrityViolationException e) {
         LOG.warn("Violación de integridad: {}", e.getMostSpecificCause().getMessage());
         return ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse.de("VIOLACION_INTEGRIDAD", msg("error.integridad")));
+    }
+
+    /** Archivo cargado mayor al límite configurado (spring.servlet.multipart.max-file-size). */
+    @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+    ResponseEntity<ErrorResponse> archivoGrande(Exception e) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(ErrorResponse.de("ARCHIVO_DEMASIADO_GRANDE", msg("error.archivo.tamano")));
+    }
+
+    /** Bloqueos o interbloqueos entre transacciones concurrentes: el cliente puede reintentar. */
+    @ExceptionHandler({org.springframework.dao.PessimisticLockingFailureException.class,
+            org.springframework.dao.CannotAcquireLockException.class})
+    ResponseEntity<ErrorResponse> concurrencia(Exception e) {
+        LOG.warn("Conflicto de concurrencia: {}", e.getMessage());
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse.de("OPERACION_CONCURRENTE", msg("error.concurrencia")));
     }
 
     /** Ruta inexistente. */

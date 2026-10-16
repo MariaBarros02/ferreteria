@@ -2,9 +2,9 @@
   Nombre: GUIA_INICIO.md
   Descripción: Guía paso a paso: instalar y arrancar el proyecto en su computador, ejecutar pruebas, desplegar y conectar con Taiga.
   Fecha de creación: 2026-10-07
-  Fecha de actualización: 2026-10-07
+  Fecha de actualización: 2026-10-16
   Autor: Equipo Ferretería
-  Versión: 1.0.0
+  Versión: 1.1.0
 -->
 
 # Guía de inicio y operación
@@ -137,9 +137,12 @@ npm run dev          # http://localhost:5173  (el proxy de Vite envía /api al p
 
 1. Entre como `marta.inventario@ferreteria.com` → **Productos**: debe ver el taladro Bosch. Cree un producto nuevo (código de 8–14 dígitos); repita el mismo código y verá el rechazo por duplicado (RN-01).
 2. Cambie el idioma **ES/EN** (arriba) y el tema claro/oscuro.
-3. Cierre sesión y entre como `laura.ventas@ferreteria.com` → **Ventas → Nueva venta**. La pantalla pide IDs numéricos: use la columna **ID** de las tablas de Productos y Terceros (cliente: Juan Pérez; producto: el taladro). Solo el taladro del seed tiene precio vigente aprobado; otro producto responderá "sin precio vigente" (RN-07).
+3. Cierre sesión y entre como `laura.ventas@ferreteria.com` → **Ventas → Nueva venta**. Busque el cliente (“Juan”) y agregue el taladro escribiendo su nombre o su código `7701234500015` + Enter (así funciona también un lector de código de barras). Revise la vista previa y registre: se abre el detalle de la venta y desde allí **Ver comprobante** → imprimir o descargar PDF (comprobante interno, sin validez fiscal). Solo el taladro del seed tiene precio vigente aprobado; otro producto responderá "sin precio vigente" (RN-07) hasta que Inventario lo proponga en **Precios** y Gerencia lo apruebe.
 4. Pida más unidades que el saldo → "Saldo insuficiente" y el inventario no cambia.
-5. Entre como `gerencia@…`: puede consultar ventas pero no registrarlas.
+5. Entre como `carlos.compras@…` → **Compras → Nueva compra**, y luego como `marta.inventario@…` registre la **recepción** (parcial o total) desde el detalle de la compra.
+6. Entre como `gerencia@…`: consulta ventas, **Auditoría** y **Cierres**, aprueba precios, pero no registra ventas.
+
+El comportamiento de cada módulo (ventas, compras, lotes y vencimientos, precios, devoluciones, ajustes, conteos, reservas, cierres, auditoría, Excel, modo sin conexión y permisos) está en [`MODULOS.md`](MODULOS.md).
 
 ## 6. Ejecutar las pruebas
 
@@ -147,9 +150,12 @@ npm run dev          # http://localhost:5173  (el proxy de Vite envía /api al p
 cd backend  && mvn test                  # unitarias (no necesitan Docker)
 cd backend  && mvn verify                # + integración, sistema y seguridad (Docker encendido)
 cd backend  && mvn org.pitest:pitest-maven:mutationCoverage     # mutación
-cd frontend && npm test                  # unitarias y de componente
+cd frontend && npm test                  # unitarias y de componente (Vitest)
+cd frontend && npm run build             # build de producción
 cd frontend && npx playwright install chromium
-cd frontend && npm run test:e2e          # E2E; requiere backend (perfil dev) y frontend corriendo
+cd frontend && npm run test:e2e          # E2E; requiere backend (perfil dev, con seed) y frontend corriendo
+#                                          (criterios-aceptacion.spec.js + flujos-operativos.spec.js: compra → recepción → precio → venta → PDF → devolución)
+database/init-db.sh                      # pruebas SQL de reglas de negocio + verificaciones de integridad
 cd frontend && npm run test:selenium     # requiere Chrome instalado
 python3 -m unittest tests/scripts/test_taiga_metricas.py
 k6 run -e USER=laura.ventas@ferreteria.com -e PASS='Ferreteria2026*' tests/stress/carga.js
@@ -160,12 +166,12 @@ Todo junto: `scripts/build-test-backend.sh [--mutacion]` y `scripts/build-test-f
 ## 7. Despliegue con Docker Compose
 
 ```bash
-cp .env.example .env     # edite DB_PASSWORD y JWT_SECRET (>= 32 caracteres aleatorios)
+cp .env.example .env     # defina DB_PASSWORD y JWT_SECRET (openssl rand -base64 32); opcional: EMPRESA_* para el comprobante
 scripts/deploy.sh        # construye, levanta db + backend + frontend y espera /actuator/health
 ```
 Frontend: http://localhost:8081 · API: http://localhost:8080.
 
-**Primer usuario administrador (obligatorio en una base nueva).** El proyecto **no incluye pantalla ni API de gestión de usuarios**, y en producción `DEMO_PASSWORD` debe estar vacío. Cree el primero por SQL con una contraseña con hash BCrypt:
+**Primer usuario administrador (obligatorio en una base nueva).** Los demás usuarios se crean desde **Administración → Usuarios**, pero el primero debe existir para poder entrar, y en producción `DEMO_PASSWORD` debe estar vacío. Cree el primero por SQL con una contraseña con hash BCrypt:
 ```bash
 HASH=$(docker run --rm httpd:2.4-alpine htpasswd -nbBC 10 "" 'SuClaveSegura123' | tr -d ':\n' | sed 's/^\$2y/\$2a/')
 docker compose exec -T db psql -U ferreteria -d ferreteria_db -c \
@@ -278,5 +284,38 @@ Informes en `reports/`. Definiciones y umbrales: `metrics/metricas.json`; detall
 | `Connection refused` a PostgreSQL | El contenedor no está activo (`docker ps`) o el puerto 5432 está ocupado. |
 | `mvn verify` falla en los `*IT` | Docker no está corriendo (Testcontainers lo necesita). `mvn test` sí funciona sin Docker. |
 | El frontend muestra errores de red / CORS | El backend no está en el 8080, o abre el frontend desde un origen distinto de `CORS_ORIGINS`. |
-| Venta responde "sin precio vigente" | Ese producto no tiene precio aprobado; el seed solo trae el del taladro y aún no hay módulo de precios. |
+| Venta responde "sin precio vigente" | Ese producto no tiene precio aprobado; el seed solo trae el del taladro. Propóngalo en **Precios** (Inventario) y apruébelo con Gerencia. |
+| "Periodo cerrado" al registrar un movimiento | El mes de la operación está cerrado; Gerencia puede reabrirlo en **Cierres** (queda auditado). |
+| La importación de Excel rechaza el archivo | Use la plantilla descargada (encabezados exactos), formato `.xlsx`, máx. 5 MB y 5000 filas; un archivo idéntico ya importado no se reprocesa. |
+| Sin conexión no aparecen productos | Debe haber sincronizado antes (se hace al iniciar sesión o con *Sincronizar para uso sin conexión*). |
 | "No se permite versionar .env" al hacer commit | El hook `pre-commit` bloquea versionar secretos: `.env` ya está en `.gitignore`. |
+
+## 11. GitHub Actions, ramas y Pull Requests
+
+**Workflows** (`.github/workflows/`):
+
+| Workflow | Se ejecuta en | Jobs (checks visibles en el PR) |
+|---|---|---|
+| `CI` (`ci.yml`) | `push` a `main`, `feature/**` y `fix/**`; `pull_request` hacia `main` (cada commit nuevo del PR); manual (`workflow_dispatch`) | **Base de datos (PostgreSQL 16)**: `init-db.sh` (DDL, migraciones, seed, 25 pruebas SQL, verificaciones) y reaplicación idempotente de las migraciones · **Backend (Maven verify)**: unitarias + integración con Testcontainers, JaCoCo · **Frontend (Vitest + build)**: pruebas, build y `npm audit --omit=dev` · **E2E (Playwright)**: backend real + frontend + Chromium (escritorio y móvil) |
+| `PR automático` (`pr-automatico.yml`) | `push` a `feature/**` o `fix/**` | Crea el PR hacia `main` si la rama no tiene uno abierto. No fusiona ni hace commits (no hay bucles). |
+
+Cada job publica un **resumen** en la ejecución (conteo de pruebas) y sube los reportes como artefactos (surefire/failsafe/JaCoCo, JUnit de Vitest, reporte HTML de Playwright y registros de backend/frontend si E2E falla).
+
+**Seguridad de los workflows:** permisos por defecto `contents: read`; solo el job que crea PR tiene además `pull-requests: write`; se usa el `GITHUB_TOKEN` del propio repositorio (ningún token en archivos); el secreto JWT del E2E se genera en cada ejecución; las acciones están fijadas por SHA de commit (`actions/checkout` v4.2.2, `setup-java` v4.7.1, `setup-node` v4.4.0, `upload-artifact` v4.6.2); los workflows usan `pull_request` (no `pull_request_target`), así que el código de PR de forks no recibe secretos.
+
+**Procedimiento de trabajo:**
+```bash
+git checkout main && git pull
+git checkout -b feature/RF-xx-descripcion      # nunca trabajar directamente en main
+# ... cambios + pruebas locales (npm test, mvn verify) ...
+git push -u origin feature/RF-xx-descripcion   # dispara "PR automático" → crea el PR hacia main
+# o, manualmente: gh pr create --base main --head feature/RF-xx-descripcion
+```
+En el PR, los checks de **CI** se ejecutan en cada commit. Fusione solo con todos en verde. Un commit hecho directamente en `main` no genera PR (ya está en el destino).
+
+**Configuración manual en GitHub (la debe hacer el propietario del repositorio):**
+1. *Settings → Actions → General → Workflow permissions*: deje “Read repository contents” y marque **“Allow GitHub Actions to create and approve pull requests”** (sin esto, `PR automático` falla con 403).
+2. *Settings → Branches → Add branch ruleset / protection rule* para `main`: **Require a pull request before merging**, **Require status checks to pass** y seleccione `Base de datos (PostgreSQL 16)`, `Backend (Maven verify)`, `Frontend (Vitest + build)` y `E2E (Playwright)` (aparecen tras la primera ejecución), y **Block force pushes**.
+3. Los eventos generados con `GITHUB_TOKEN` (como el PR que abre `PR automático`) no disparan otros workflows; por eso `CI` también se ejecuta en el `push` de las ramas `feature/**` y `fix/**`: sus checks quedan en el commit y aparecen en el PR desde el primer momento. Los commits siguientes ejecutan además el evento `pull_request`.
+
+El pipeline local con Taiga (`scripts/ci-pipeline.sh`, sección 8) sigue disponible y es independiente de GitHub Actions.

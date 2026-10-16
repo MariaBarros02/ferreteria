@@ -2,9 +2,9 @@
  * Nombre: SecurityConfig.java
  * Descripción: Seguridad HTTP: JWT sin estado, RBAC por método, CORS restringido, cabeceras seguras y errores 401/403 en JSON.
  * Fecha de creación: 2026-10-07
- * Fecha de actualización: 2026-10-07
+ * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 package com.ferreteria.inventario.config;
 
@@ -106,6 +106,7 @@ public class SecurityConfig {
         c.setAllowedOrigins(Arrays.stream(origenes.split(",")).map(String::trim).toList());
         c.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         c.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept-Language"));
+        c.setExposedHeaders(List.of("Content-Disposition"));   // nombre de los archivos descargados
         c.setMaxAge(3600L);
         UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
         src.registerCorsConfiguration("/**", c);

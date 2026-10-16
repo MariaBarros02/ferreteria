@@ -1,49 +1,144 @@
 /*
  * Nombre: VentaResponse.java
- * Descripción: DTO de salida de venta con líneas, total y factura emitida (número interno distinto de numeración fiscal, RN-14).
+ * Descripción: DTO de salida de una venta con líneas, totales persistidos y factura (RF-04, RF-18).
  * Fecha de creación: 2026-10-07
- * Fecha de actualización: 2026-10-07
+ * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 package com.ferreteria.inventario.dto;
 
 import com.ferreteria.inventario.domain.enums.EstadoDocumento;
 import com.ferreteria.inventario.domain.enums.ModalidadFactura;
 import com.ferreteria.inventario.domain.model.Factura;
+import com.ferreteria.inventario.domain.model.LineaVenta;
 import com.ferreteria.inventario.domain.model.Venta;
+import com.ferreteria.inventario.service.Montos;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 /**
- * Venta registrada.
+ * Venta registrada. Todos los importes provienen de los valores persistidos (precio aplicado y totales
+ * guardados al vender); nunca se recalculan con precios actuales.
+ *
+ * @param id identificador
+ * @param numeroInterno número interno de venta
+ * @param clienteId cliente
+ * @param fecha fecha (UTC)
+ * @param estado estado del documento
+ * @param lineas líneas
+ * @param total total a pagar
+ * @param factura factura emitida
+ * @param cliente nombre del cliente
+ * @param usuario correo del usuario responsable
+ * @param subtotal subtotal antes de descuentos e impuestos
+ * @param totalDescuentos total de descuentos
+ * @param totalImpuestos total de impuestos
+ * @param observaciones observaciones
  */
 public record VentaResponse(Long id, String numeroInterno, Long clienteId, LocalDateTime fecha, EstadoDocumento estado,
-                            List<Linea> lineas, BigDecimal total, FacturaInfo factura) {
-
-    /** Línea de la venta (cantidad en unidad base). */
-    public record Linea(Long productoId, BigDecimal cantidad, BigDecimal precioAplicado, BigDecimal subtotal) { }
-
-    /** Datos de la factura emitida. */
-    public record FacturaInfo(Long id, String numeracionDian, ModalidadFactura modalidad, BigDecimal impuestos,
-                              BigDecimal descuentos) { }
+                            List<Linea> lineas, BigDecimal total, FacturaInfo factura, String cliente, String usuario,
+                            BigDecimal subtotal, BigDecimal totalDescuentos, BigDecimal totalImpuestos,
+                            String observaciones) {
 
     /**
-     * Construye desde las entidades.
+     * Línea de la venta (cantidad en unidad base).
+     *
+     * @param productoId producto
+     * @param cantidad cantidad en unidad base
+     * @param precioAplicado precio aplicado por unidad base
+     * @param subtotal cantidad × precio
+     * @param id identificador de la línea
+     * @param producto nombre legible del producto
+     * @param codigoBarras código de barras
+     * @param unidadBase unidad base
+     * @param unidad presentación vendida
+     * @param cantidadPresentacion cantidad en la presentación vendida
+     * @param porcentajeDescuento descuento
+     * @param porcentajeIva IVA
+     * @param descuento valor del descuento
+     * @param impuesto valor del impuesto
+     * @param total total de la línea
+     * @param garantiaHasta fin de la garantía
+     * @param cantidadDevuelta cantidad ya devuelta (solo en el detalle)
+     */
+    public record Linea(Long productoId, BigDecimal cantidad, BigDecimal precioAplicado, BigDecimal subtotal, Long id,
+                        String producto, String codigoBarras, String unidadBase, String unidad,
+                        BigDecimal cantidadPresentacion, BigDecimal porcentajeDescuento, BigDecimal porcentajeIva,
+                        BigDecimal descuento, BigDecimal impuesto, BigDecimal total, LocalDate garantiaHasta,
+                        BigDecimal cantidadDevuelta) { }
+
+    /**
+     * Datos de la factura emitida.
+     *
+     * @param id identificador
+     * @param numeracionDian numeración fiscal
+     * @param modalidad modalidad
+     * @param impuestos impuestos
+     * @param descuentos descuentos
+     * @param fechaEmision fecha de emisión
+     * @param validaFiscalmente {@code true} solo si la numeración proviene de una integración DIAN validada
+     */
+    public record FacturaInfo(Long id, String numeracionDian, ModalidadFactura modalidad, BigDecimal impuestos,
+                              BigDecimal descuentos, LocalDateTime fechaEmision, boolean validaFiscalmente) { }
+
+    /**
+     * Datos de un producto para mostrar en la línea.
+     *
+     * @param nombre nombre legible
+     * @param codigoBarras código de barras
+     * @param unidadBase unidad base
+     */
+    public record InfoProducto(String nombre, String codigoBarras, String unidadBase) { }
+
+    /**
+     * Construye desde las entidades sin datos descriptivos adicionales.
      *
      * @param v venta
      * @param f factura (puede ser nula)
      * @return DTO
      */
     public static VentaResponse de(Venta v, Factura f) {
-        List<Linea> ls = v.getLineas().stream()
-                .map(l -> new Linea(l.getIdProducto(), l.getCantidad(), l.getPrecioAplicado(),
-                        l.getCantidad().multiply(l.getPrecioAplicado())))
-                .toList();
-        BigDecimal total = ls.stream().map(Linea::subtotal).reduce(BigDecimal.ZERO, BigDecimal::add);
+        return de(v, f, null, null, Map.of(), Map.of(), false);
+    }
+
+    /**
+     * Construye desde las entidades.
+     *
+     * @param v venta
+     * @param f factura (puede ser nula)
+     * @param cliente nombre del cliente
+     * @param usuario correo del usuario
+     * @param productos datos de los productos por id
+     * @param devueltas cantidades devueltas por línea (vacío si no aplica)
+     * @param fiscal la numeración es fiscalmente válida
+     * @return DTO
+     */
+    public static VentaResponse de(Venta v, Factura f, String cliente, String usuario, Map<Long, InfoProducto> productos,
+                                   Map<Long, BigDecimal> devueltas, boolean fiscal) {
+        List<Linea> ls = v.getLineas().stream().map(l -> linea(l, productos.get(l.getIdProducto()),
+                devueltas.isEmpty() ? null : devueltas.getOrDefault(l.getId(), BigDecimal.ZERO))).toList();
+        BigDecimal subtotal = v.getSubtotal() != null ? v.getSubtotal()
+                : ls.stream().map(Linea::subtotal).reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal desc = v.getTotalDescuentos() != null ? v.getTotalDescuentos() : f == null ? BigDecimal.ZERO : f.getDescuentos();
+        BigDecimal imp = v.getTotalImpuestos() != null ? v.getTotalImpuestos() : f == null ? BigDecimal.ZERO : f.getImpuestos();
+        BigDecimal total = v.getTotal() != null ? v.getTotal() : subtotal.subtract(desc).add(imp);
         FacturaInfo fi = f == null ? null
-                : new FacturaInfo(f.getId(), f.getNumeracionDian(), f.getModalidad(), f.getImpuestos(), f.getDescuentos());
-        return new VentaResponse(v.getId(), v.getNumeroInterno(), v.getIdCliente(), v.getFecha(), v.getEstado(), ls, total, fi);
+                : new FacturaInfo(f.getId(), f.getNumeracionDian(), f.getModalidad(), f.getImpuestos(), f.getDescuentos(),
+                        f.getFechaEmision(), fiscal);
+        return new VentaResponse(v.getId(), v.getNumeroInterno(), v.getIdCliente(), v.getFecha(), v.getEstado(), ls, total,
+                fi, cliente, usuario, subtotal, desc, imp, v.getObservaciones());
+    }
+
+    private static Linea linea(LineaVenta l, InfoProducto p, BigDecimal devuelta) {
+        BigDecimal subtotal = l.getSubtotal() != null ? l.getSubtotal() : Montos.redondear(l.getCantidad().multiply(l.getPrecioAplicado()));
+        BigDecimal total = l.getTotal() != null ? l.getTotal() : subtotal.subtract(l.getDescuento()).add(l.getImpuesto());
+        return new Linea(l.getIdProducto(), l.getCantidad(), l.getPrecioAplicado(), subtotal, l.getId(),
+                p == null ? null : p.nombre(), p == null ? null : p.codigoBarras(), p == null ? null : p.unidadBase(),
+                l.getUnidad(), l.getCantidadPresentacion(), l.getPorcentajeDescuento(), l.getPorcentajeIva(),
+                l.getDescuento(), l.getImpuesto(), total, l.getGarantiaHasta(), devuelta);
     }
 }

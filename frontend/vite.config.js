@@ -2,7 +2,7 @@
  * Nombre: vite.config.js
  * Descripción: Configuración de Vite y Vitest (jsdom). El proxy /api apunta al backend en desarrollo.
  * Fecha de creación: 2026-10-07
- * Fecha de actualización: 2026-10-07
+ * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
  * Versión: 1.0.0
  */
@@ -12,6 +12,8 @@ import react from '@vitejs/plugin-react';
 /** Configuración del bundler y del runner de pruebas unitarias. */
 export default defineConfig({
   plugins: [react()],
+  // Dependencias en paquetes propios: se cachean entre versiones de la aplicación.
+  build: { rollupOptions: { output: { manualChunks: { react: ['react', 'react-dom', 'react-router-dom'], mui: ['@mui/material', '@emotion/react', '@emotion/styled'], formularios: ['formik', 'yup', 'i18next', 'react-i18next', 'axios'] } } } },
   server: { port: 5173, proxy: { '/api': { target: process.env.VITE_PROXY_TARGET || 'http://localhost:8080', changeOrigin: true } } },
   test: {
     environment: 'jsdom',

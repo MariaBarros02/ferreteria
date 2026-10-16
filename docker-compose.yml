@@ -2,9 +2,9 @@
 # Nombre: docker-compose.yml
 # Descripción: Orquestación de producción/pruebas: PostgreSQL, backend y frontend. Los secretos se leen del archivo .env (no versionado).
 # Fecha de creación: 2026-10-07
-# Fecha de actualización: 2026-10-07
+# Fecha de actualización: 2026-10-16
 # Autor: Equipo Ferretería
-# Versión: 1.0.0
+# Versión: 1.1.0
 ######################################################################
 services:
   db:
@@ -27,6 +27,15 @@ services:
       JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET (>=32 caracteres) en .env}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:8081}
       DEMO_PASSWORD: ${DEMO_PASSWORD:-}
+      # Datos del comprobante y parámetros de negocio (opcionales; ver application.yml)
+      EMPRESA_NOMBRE: ${EMPRESA_NOMBRE:-Ferretería}
+      EMPRESA_NIT: ${EMPRESA_NIT:-}
+      EMPRESA_DIRECCION: ${EMPRESA_DIRECCION:-}
+      EMPRESA_CIUDAD: ${EMPRESA_CIUDAD:-}
+      EMPRESA_TELEFONO: ${EMPRESA_TELEFONO:-}
+      EMPRESA_CORREO: ${EMPRESA_CORREO:-}
+      ZONA_HORARIA: ${ZONA_HORARIA:-America/Bogota}
+      DESCUENTO_MAXIMO: ${DESCUENTO_MAXIMO:-10}
     depends_on: { db: { condition: service_healthy } }
     ports: ["8080:8080"]
   frontend:

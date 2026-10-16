@@ -2,7 +2,7 @@
 -- Nombre: 03_pruebas.sql
 -- Descripción: Pruebas automatizadas de reglas de negocio en PL/pgSQL; resultados en test_resultados.
 -- Fecha de creación: 2026-10-07
--- Fecha de actualización: 2026-10-07
+-- Fecha de actualización: 2026-10-16
 -- Autor: Equipo Ferretería
 -- Versión: 1.0.0
 -- ====================================================================
@@ -256,6 +256,198 @@ BEGIN
         INSERT INTO test_resultados (nombre_prueba, regla, resultado, detalle)
         VALUES ('Costo promedio ponderado', 'RF-07', 'FALLO',
                 'Se esperaba $12.000 y se obtuvo $' || v_costo_promedio || '.');
+    END IF;
+END $$;
+
+-- =================================================================
+-- Pruebas añadidas con la migración V4 (2026-10-16)
+-- =================================================================
+
+-- -----------------------------------------------------------------
+-- PRUEBA 13 (RN-05): el saldo de un lote nunca es negativo y su código no se repite
+--   (los datos de preparación se deshacen al final para no alterar las verificaciones)
+-- -----------------------------------------------------------------
+DO $$
+DECLARE v_lote INTEGER; r1 TEXT; r2 TEXT;
+BEGIN
+    BEGIN
+        INSERT INTO lote (id_producto, codigo, fecha_vencimiento, disponible)
+        SELECT id_producto, 'L-PRUEBA-13', CURRENT_DATE + 30, 5 FROM producto WHERE codigo_barras = '7701234500039'
+        RETURNING id_lote INTO v_lote;
+        BEGIN
+            UPDATE lote SET disponible = disponible - 6 WHERE id_lote = v_lote;
+            r1 := 'FALLO';
+        EXCEPTION WHEN check_violation THEN r1 := 'EXITO';
+        END;
+        BEGIN
+            INSERT INTO lote (id_producto, codigo, disponible)
+            SELECT id_producto, 'L-PRUEBA-13', 1 FROM producto WHERE codigo_barras = '7701234500039';
+            r2 := 'FALLO';
+        EXCEPTION WHEN unique_violation THEN r2 := 'EXITO';
+        END;
+        RAISE EXCEPTION '__deshacer__';
+    EXCEPTION WHEN raise_exception THEN
+        IF SQLERRM <> '__deshacer__' THEN RAISE; END IF;
+    END;
+    INSERT INTO test_resultados (nombre_prueba, regla, resultado, detalle)
+    VALUES ('Lote con saldo negativo', 'RN-05', r1, 'El lote no debe admitir saldos negativos.'),
+           ('Código de lote repetido', 'RN-05', r2, 'El código de lote debe ser único por producto.');
+END $$;
+
+-- -----------------------------------------------------------------
+-- PRUEBA 14 (RF-08): los eventos de auditoría no se editan ni se borran
+-- -----------------------------------------------------------------
+DO $$
+DECLARE v_id BIGINT;
+BEGIN
+    INSERT INTO evento_auditoria (modulo, accion, entidad, id_entidad, descripcion)
+    VALUES ('PRUEBAS', 'CREAR', 'prueba', '1', 'Evento de prueba') RETURNING id_evento INTO v_id;
+    BEGIN
+        UPDATE evento_auditoria SET descripcion = 'alterado' WHERE id_evento = v_id;
+        INSERT INTO test_resultados (nombre_prueba, regla, resultado, detalle)
+        VALUES ('Edición de evento de auditoría', 'RF-08', 'FALLO', 'Se permitió editar un evento de auditoría.');
+    EXCEPTION WHEN raise_exception THEN
+        INSERT INTO test_resultados (nombre_prueba, regla, resultado, detalle)
+        VALUES ('Edición de evento de auditoría', 'RF-08', 'EXITO', 'La auditoría es inmutable (UPDATE).');
+    END;
+    BEGIN
+        DELETE FROM evento_auditoria WHERE id_evento = v_id;
+        INSERT INTO test_resultados (nombre_prueba, regla, resultado, detalle)
+        VALUES ('Borrado de evento de auditoría', 'RF-08', 'FALLO', 'Se permitió borrar un evento de auditoría.');
+    EXCEPTION WHEN raise_exception THEN
+        INSERT INTO test_resultados (nombre_prueba, regla, resultado, detalle)
+        VALUES ('Borrado de evento de auditoría', 'RF-08', 'EXITO', 'La auditoría es inmutable (DELETE).');
+    END;
+END $$;
+
+-- -----------------------------------------------------------------
+-- PRUEBA 15 (RF-14): un ajuste aprobado debe tener su movimiento
+-- -----------------------------------------------------------------
+DO $$
+BEGIN
+    BEGIN
+        INSERT INTO ajuste_inventario (numero, id_producto, tipo, cantidad, motivo, estado, id_usuario_solicita,
+                                       id_usuario_decide, fecha_decision)
+        SELECT 'AJ-PRUEBA-15', p.id_producto, 'entrada', 1, 'Prueba', 'aprobado', u.id_usuario, u.id_usuario, now()
+        FROM producto p, usuario u WHERE p.codigo_barras = '7701234500022' AND u.correo = 'gerencia@ferreteria.com';
+        INSERT INTO test_resultados (nombre_prueba, regla, resultado, detalle)
+        VALUES ('Ajuste aprobado sin movimiento', 'RF-14', 'FALLO', 'Se aprobó un ajuste sin movimiento trazable.');
+    EXCEPTION WHEN check_violation THEN
+        INSERT INTO test_resultados (nombre_prueba, regla, resultado, detalle)
+        VALUES ('Ajuste aprobado sin movimiento', 'RF-14', 'EXITO', 'Todo ajuste aprobado exige su movimiento.');
+    END;
+    BEGIN
+        INSERT INTO ajuste_inventario (numero, id_producto, tipo, cantidad, motivo, id_usuario_solicita)
+        SELECT 'AJ-PRUEBA-15B', p.id_producto, 'entrada', 1, '   ', u.id_usuario
+        FROM producto p, usuario u WHERE p.codigo_barras = '7701234500022' AND u.correo = 'marta.inventario@ferreteria.com';
+        INSERT INTO test_resultados (nombre_prueba, regla, resultado, detalle)
+        VALUES ('Ajuste sin motivo', 'RF-14', 'FALLO', 'Se registró un ajuste sin motivo.');
+    EXCEPTION WHEN check_violation THEN
+        INSERT INTO test_resultados (nombre_prueba, regla, resultado, detalle)
+        VALUES ('Ajuste sin motivo', 'RF-14', 'EXITO', 'El motivo del ajuste es obligatorio.');
+    END;
+END $$;
+
+-- -----------------------------------------------------------------
+-- PRUEBA 16 (RF-13): la devolución de cliente exige la venta original
+-- -----------------------------------------------------------------
+DO $$
+BEGIN
+    BEGIN
+        INSERT INTO documento_devolucion (numero, tipo, id_usuario, motivo, tratamiento)
+        SELECT 'DEV-PRUEBA-16', 'cliente', id_usuario, 'Prueba', 'reembolso' FROM usuario WHERE correo = 'laura.ventas@ferreteria.com';
+        INSERT INTO test_resultados (nombre_prueba, regla, resultado, detalle)
+        VALUES ('Devolución sin documento original', 'RF-13', 'FALLO', 'Se registró una devolución sin venta de origen.');
+    EXCEPTION WHEN check_violation THEN
+        INSERT INTO test_resultados (nombre_prueba, regla, resultado, detalle)
+        VALUES ('Devolución sin documento original', 'RF-13', 'EXITO', 'La devolución queda vinculada al documento original.');
+    END;
+END $$;
+
+-- -----------------------------------------------------------------
+-- PRUEBA 17 (RN-09): anular un documento de ingreso exige motivo
+-- -----------------------------------------------------------------
+DO $$
+BEGIN
+    BEGIN
+        UPDATE documento_ingreso SET estado = 'anulado' WHERE consecutivo = 'ING-000001';
+        INSERT INTO test_resultados (nombre_prueba, regla, resultado, detalle)
+        VALUES ('Anulación sin motivo', 'RN-09', 'FALLO', 'Se anuló un documento de ingreso sin motivo.');
+    EXCEPTION WHEN check_violation THEN
+        INSERT INTO test_resultados (nombre_prueba, regla, resultado, detalle)
+        VALUES ('Anulación sin motivo', 'RN-09', 'EXITO', 'Anular un documento de ingreso exige motivo.');
+    END;
+END $$;
+
+-- -----------------------------------------------------------------
+-- PRUEBA 18 (RF-08): un período solo se cierra una vez, es mensual y los cierres no se borran
+-- -----------------------------------------------------------------
+DO $$
+DECLARE v_usuario INTEGER; r1 TEXT; r2 TEXT; r3 TEXT;
+BEGIN
+    SELECT id_usuario INTO v_usuario FROM usuario WHERE correo = 'gerencia@ferreteria.com';
+    BEGIN
+        INSERT INTO cierre_periodo (periodo, id_usuario) VALUES (DATE '2000-01-01', v_usuario);
+        BEGIN
+            INSERT INTO cierre_periodo (periodo, id_usuario) VALUES (DATE '2000-01-01', v_usuario);
+            r1 := 'FALLO';
+        EXCEPTION WHEN unique_violation THEN r1 := 'EXITO';
+        END;
+        BEGIN
+            DELETE FROM cierre_periodo WHERE periodo = DATE '2000-01-01';
+            r2 := 'FALLO';
+        EXCEPTION WHEN raise_exception THEN r2 := 'EXITO';
+        END;
+        BEGIN
+            INSERT INTO cierre_periodo (periodo, id_usuario) VALUES (DATE '2000-02-15', v_usuario);
+            r3 := 'FALLO';
+        EXCEPTION WHEN check_violation THEN r3 := 'EXITO';
+        END;
+        RAISE EXCEPTION '__deshacer__';
+    EXCEPTION WHEN raise_exception THEN
+        IF SQLERRM <> '__deshacer__' THEN RAISE; END IF;
+    END;
+    INSERT INTO test_resultados (nombre_prueba, regla, resultado, detalle)
+    VALUES ('Cierre duplicado', 'RF-08', r1, 'Un período debe tener un único cierre.'),
+           ('Borrado de cierre', 'RN-09', r2, 'Los cierres no se eliminan.'),
+           ('Cierre de período no mensual', 'RF-08', r3, 'El cierre es mensual (día 1 del mes).');
+END $$;
+
+-- -----------------------------------------------------------------
+-- PRUEBA 19 (RF-11/RNF-02): una misma operación no se registra dos veces
+-- -----------------------------------------------------------------
+DO $$
+DECLARE v_cliente INTEGER; r1 TEXT;
+BEGIN
+    SELECT id_tercero INTO v_cliente FROM tercero WHERE numero_identificacion = '1002003000';
+    BEGIN
+        INSERT INTO venta (numero_interno, id_cliente, id_operacion) VALUES ('VTA-PRUEBA-19A', v_cliente, 'op-prueba-19');
+        BEGIN
+            INSERT INTO venta (numero_interno, id_cliente, id_operacion) VALUES ('VTA-PRUEBA-19B', v_cliente, 'op-prueba-19');
+            r1 := 'FALLO';
+        EXCEPTION WHEN unique_violation THEN r1 := 'EXITO';
+        END;
+        RAISE EXCEPTION '__deshacer__';
+    EXCEPTION WHEN raise_exception THEN
+        IF SQLERRM <> '__deshacer__' THEN RAISE; END IF;
+    END;
+    INSERT INTO test_resultados (nombre_prueba, regla, resultado, detalle)
+    VALUES ('Venta duplicada por reintento', 'RF-11', r1, 'La clave de operación debe impedir duplicar la venta.');
+END $$;
+
+-- -----------------------------------------------------------------
+-- PRUEBA 20 (RF-04): los totales históricos se conservan tras la migración
+-- -----------------------------------------------------------------
+DO $$
+DECLARE v_total NUMERIC;
+BEGIN
+    SELECT total INTO v_total FROM venta WHERE numero_interno = 'VTA-000001';
+    IF v_total = 1300000 THEN
+        INSERT INTO test_resultados (nombre_prueba, regla, resultado, detalle)
+        VALUES ('Total histórico de venta', 'RF-04', 'EXITO', 'VTA-000001 conserva su total (2 x 650.000) tras la migración.');
+    ELSE
+        INSERT INTO test_resultados (nombre_prueba, regla, resultado, detalle)
+        VALUES ('Total histórico de venta', 'RF-04', 'FALLO', 'Total inesperado: ' || COALESCE(v_total::text, 'NULL'));
     END IF;
 END $$;
 

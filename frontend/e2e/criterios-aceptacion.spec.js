@@ -2,9 +2,9 @@
  * Nombre: criterios-aceptacion.spec.js
  * Descripción: Pruebas E2E con Playwright de los criterios de aceptación (HU-01, HU-05, HU-08, HU-13, i18n, responsivo, accesibilidad).
  * Fecha de creación: 2026-10-07
- * Fecha de actualización: 2026-10-07
+ * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 import { test, expect } from "@playwright/test";
 
@@ -155,18 +155,18 @@ test.describe("HU-05 venta", () => {
     page,
   }) => {
     await entrar(page, "laura.ventas@ferreteria.com");
-    await page.goto("/ventas");
-    await page.getByRole("button", { name: /nueva venta/i }).click();
-    await page.getByLabel(/^cliente/i).fill("1");
-    await page.getByLabel(/^producto/i).fill("1");
-    await page.getByLabel(/^cantidad/i).fill("999999");
-
+    await page.goto("/ventas/nueva");
+    // Selectores con búsqueda (RF-11): ya no se escriben identificadores numéricos.
+    await page.getByRole("combobox", { name: /^cliente/i }).fill("Juan");
+    await page.getByRole("option", { name: /Juan Pérez/i }).click();
+    const producto = page.getByRole("combobox", { name: /^producto/i });
+    await producto.fill("7701234500015");
+    await producto.press("Enter");
+    await page.getByLabel("Cantidad 1").fill("999999");
     await page.getByRole("button", { name: /registrar venta/i }).click();
-
-    await page.waitForTimeout(500);
-
-    //await expect(page.getByRole("alert")).toContainText(/saldo insuficiente/i);
+    await page.getByRole("dialog").getByRole("button", { name: /registrar venta/i }).click();
     await expect(page.getByText(/saldo insuficiente/i)).toBeVisible();
+    await expect(page).toHaveURL(/\/ventas\/nueva/);
   });
 });
 

@@ -10,6 +10,8 @@
  */
 package com.ferreteria.inventario.unit;
 
+import com.ferreteria.inventario.service.ContextoSolicitud;
+import com.ferreteria.inventario.service.EventoAuditoriaService;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -46,9 +48,15 @@ class TerceroServiceTest {
 
     private TerceroService servicio;
 
+    @Mock
+    private EventoAuditoriaService eventos;
+
+    @Mock
+    private ContextoSolicitud contexto;
+
     @BeforeEach
     void preparar() {
-        servicio = new TerceroService(terceros);
+        servicio = new TerceroService(terceros, eventos, contexto);
     }
 
     private TerceroRequest requestNatural(String identificacion) {

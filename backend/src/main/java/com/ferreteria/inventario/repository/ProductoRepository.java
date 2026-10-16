@@ -2,9 +2,9 @@
  * Nombre: ProductoRepository.java
  * Descripción: Repositorio Spring Data de productos: búsqueda por código de barras, unicidad de referencia y filtro de texto.
  * Fecha de creación: 2026-10-07
- * Fecha de actualización: 2026-10-07
+ * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 package com.ferreteria.inventario.repository;
 
@@ -67,4 +67,34 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
               or p.codigoBarras like concat('%', :q, '%')
            """)
     Page<Producto> buscar(@Param("q") String q, Pageable pageable);
+
+    /**
+     * Búsqueda paginada limitada a referencias activas (selectores de venta, compra e inventario).
+     *
+     * @param q texto; cadena vacía para no filtrar
+     * @param pageable paginación
+     * @return página de productos activos
+     */
+    @Query("""
+           select p from Producto p
+           where p.activo = true and (:q = ''
+              or lower(p.nombre) like lower(concat('%', :q, '%'))
+              or lower(p.marca) like lower(concat('%', :q, '%'))
+              or lower(p.presentacion) like lower(concat('%', :q, '%'))
+              or lower(coalesce(p.categoria, '')) like lower(concat('%', :q, '%'))
+              or p.codigoBarras like concat('%', :q, '%'))
+           """)
+    Page<Producto> buscarActivos(@Param("q") String q, Pageable pageable);
+
+    /**
+     * Productos con existencia mínima configurada cuyo disponible es menor o igual a ella.
+     *
+     * @return productos con stock bajo
+     */
+    @Query("""
+           select p from Producto p, Inventario i where i.idProducto = p.id and p.activo = true
+              and p.stockMinimo is not null and i.disponible <= p.stockMinimo
+           order by p.nombre
+           """)
+    java.util.List<Producto> conStockBajo();
 }

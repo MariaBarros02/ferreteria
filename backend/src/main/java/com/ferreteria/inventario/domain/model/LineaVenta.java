@@ -2,14 +2,15 @@
  * Nombre: LineaVenta.java
  * Descripción: Entidad JPA de línea de venta: cantidad en unidad base y precio vigente aplicado.
  * Fecha de creación: 2026-10-07
- * Fecha de actualización: 2026-10-07
+ * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 package com.ferreteria.inventario.domain.model;
 
 import jakarta.persistence.*;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import lombok.*;
 
 /**
@@ -43,4 +44,44 @@ public class LineaVenta {
     /** Precio vigente aplicado por unidad base. */
     @Column(name = "precio_aplicado", nullable = false, precision = 14, scale = 4)
     private BigDecimal precioAplicado;
+
+    /** Presentación usada al vender (nula = unidad base). */
+    @Column(length = 20)
+    private String unidad;
+
+    /** Cantidad expresada en la presentación vendida. */
+    @Column(name = "cantidad_presentacion", precision = 14, scale = 4)
+    private BigDecimal cantidadPresentacion;
+
+    /** Porcentaje de descuento de la línea. */
+    @Builder.Default
+    @Column(name = "porcentaje_descuento", nullable = false, precision = 5, scale = 2)
+    private BigDecimal porcentajeDescuento = BigDecimal.ZERO;
+
+    /** Porcentaje de IVA aplicado (copiado del producto en el momento de la venta). */
+    @Builder.Default
+    @Column(name = "porcentaje_iva", nullable = false, precision = 5, scale = 2)
+    private BigDecimal porcentajeIva = BigDecimal.ZERO;
+
+    /** Cantidad × precio, antes de descuento e impuesto. */
+    @Column(precision = 16, scale = 2)
+    private BigDecimal subtotal;
+
+    /** Valor del descuento. */
+    @Builder.Default
+    @Column(nullable = false, precision = 16, scale = 2)
+    private BigDecimal descuento = BigDecimal.ZERO;
+
+    /** Valor del impuesto. */
+    @Builder.Default
+    @Column(nullable = false, precision = 16, scale = 2)
+    private BigDecimal impuesto = BigDecimal.ZERO;
+
+    /** Total de la línea. */
+    @Column(precision = 16, scale = 2)
+    private BigDecimal total;
+
+    /** Fin de la garantía cuando el producto la maneja. */
+    @Column(name = "garantia_hasta")
+    private LocalDate garantiaHasta;
 }
