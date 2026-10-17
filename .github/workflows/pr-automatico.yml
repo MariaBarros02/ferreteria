@@ -1,0 +1,46 @@
+######################################################################
+# Nombre: pr-automatico.yml
+# Descripción: Abre automáticamente un Pull Request hacia main cuando se publica una rama feature/** o fix/**
+#              que aún no tiene PR abierto. No fusiona nada: la integración la decide una persona tras la revisión
+#              y con la CI en verde (protección de main configurada en GitHub, ver docs/GUIA_INICIO.md, sección 11).
+# Fecha de creación: 2026-10-16
+# Fecha de actualización: 2026-10-16
+# Autor: Equipo Ferretería
+# Versión: 1.0.0
+######################################################################
+name: PR automático
+
+on:
+  push:
+    branches: ["feature/**", "fix/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  abrir-pr:
+    name: Abrir PR hacia main
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      pull-requests: write   # único permiso adicional: crear el PR
+    steps:
+      - name: Crear PR si no existe
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          RAMA: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          abiertos=$(gh pr list --repo "$REPO" --head "$RAMA" --base main --state open --json number --jq 'length')
+          if [ "$abiertos" != "0" ]; then
+            echo "Ya existe un PR abierto para $RAMA"; exit 0
+          fi
+          gh pr create --repo "$REPO" --base main --head "$RAMA" \
+            --title "$(echo "$RAMA" | sed -E 's#^(feature|fix)/##; s#[-_]+# #g')" \
+            --body "PR creado automáticamente al publicar la rama \`$RAMA\`. Revise la descripción, los resultados de la CI y la matriz de trazabilidad antes de fusionar."

@@ -2,12 +2,19 @@
  * Nombre: ProductoServiceTest.java
  * Descripción: Pruebas unitarias del servicio de productos: unicidad RN-01, saldo inicial en cero, eliminación y unidades.
  * Fecha de creación: 2026-10-07
- * Fecha de actualización: 2026-10-07
+ * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
  * Versión: 1.0.0
  */
 package com.ferreteria.inventario.unit;
 
+import java.time.Clock;
+import com.ferreteria.inventario.repository.LoteRepository;
+import com.ferreteria.inventario.repository.PrecioRepository;
+import com.ferreteria.inventario.service.EventoAuditoriaService;
+import com.ferreteria.inventario.service.ContextoSolicitud;
+import com.ferreteria.inventario.service.Actor;
+import com.ferreteria.inventario.config.ParametrosNegocio;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -47,6 +54,10 @@ class ProductoServiceTest {
     @Mock ProductoRepository productos;
     @Mock InventarioRepository inventarios;
     @Mock ConversionUnidadRepository conversiones;
+    @Mock PrecioRepository precios;
+    @Mock LoteRepository lotes;
+    @Mock EventoAuditoriaService eventos;
+    @Mock ContextoSolicitud contexto;
     ProductoService servicio;
 
     ProductoRequest req = new ProductoRequest(" Taladro ", "Bosch", "500W", "7701234500015", "unidad",
@@ -54,7 +65,9 @@ class ProductoServiceTest {
 
     @BeforeEach
     void preparar() {
-        servicio = new ProductoService(productos, inventarios, conversiones);
+        servicio = new ProductoService(productos, inventarios, conversiones, precios, lotes, eventos, contexto,
+                ParametrosNegocio.porDefecto(), Clock.systemUTC());
+        when(contexto.actor()).thenReturn(new Actor(1, "marta.inventario@ferreteria.com", "127.0.0.1"));
         when(productos.save(any(Producto.class))).thenAnswer(a -> { Producto p = a.getArgument(0); p.setId(10L); return p; });
         when(productos.findByCodigoBarras(any())).thenReturn(Optional.empty());
         when(productos.findByNombreIgnoreCaseAndMarcaIgnoreCaseAndPresentacionIgnoreCase(any(), any(), any()))

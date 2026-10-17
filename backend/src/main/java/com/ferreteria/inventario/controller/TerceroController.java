@@ -2,9 +2,9 @@
  * Nombre: TerceroController.java
  * Descripción: API REST de terceros (clientes y proveedores): CRUD con RBAC (RF-06).
  * Fecha de creación: 2026-10-07
- * Fecha de actualización: 2026-10-07
+ * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 package com.ferreteria.inventario.controller;
 
@@ -81,5 +81,15 @@ public class TerceroController {
     @Operation(summary = "Eliminar tercero", description = "Solo si no tiene documentos asociados (409 en caso contrario).")
     public void eliminar(@PathVariable Long id) {
         servicio.eliminar(id);
+    }
+
+    /** Selector de clientes o proveedores con búsqueda por nombre, identificación o correo. */
+    @GetMapping("/seleccion")
+    @Operation(summary = "Buscar clientes o proveedores para selección")
+    public java.util.List<TerceroResponse> seleccion(@RequestParam(required = false) @Size(max = 100) String q,
+                                                     @RequestParam(defaultValue = "cliente")
+                                                     @jakarta.validation.constraints.Pattern(regexp = "cliente|proveedor|todos") String rol,
+                                                     @RequestParam(defaultValue = "15") @Min(1) @Max(50) int tamano) {
+        return servicio.buscarParaSeleccion(q, rol, tamano);
     }
 }

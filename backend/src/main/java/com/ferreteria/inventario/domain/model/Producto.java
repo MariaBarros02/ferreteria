@@ -2,15 +2,16 @@
  * Nombre: Producto.java
  * Descripción: Entidad JPA de la tabla producto: referencia vendible = producto + marca + presentación (RN-01).
  * Fecha de creación: 2026-10-07
- * Fecha de actualización: 2026-10-07
+ * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 package com.ferreteria.inventario.domain.model;
 
 import com.ferreteria.inventario.domain.Convertidores;
 import com.ferreteria.inventario.domain.enums.TipoRastreo;
 import jakarta.persistence.*;
+import java.math.BigDecimal;
 import lombok.*;
 
 /**
@@ -59,4 +60,38 @@ public class Producto {
     /** Indica si el producto maneja garantía. */
     @Column(name = "tiene_garantia", nullable = false)
     private boolean tieneGarantia;
+
+    /** Referencia activa; un producto con historial se desactiva en lugar de eliminarse (RN-09). */
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean activo = true;
+
+    /** Descripción opcional. */
+    @Column(length = 500)
+    private String descripcion;
+
+    /** Categoría opcional (herramientas, tornillería…). */
+    @Column(length = 100)
+    private String categoria;
+
+    /** Porcentaje de IVA aplicado sobre el precio antes de impuestos (0 por defecto). */
+    @Builder.Default
+    @Column(name = "porcentaje_iva", nullable = false, precision = 5, scale = 2)
+    private BigDecimal porcentajeIva = BigDecimal.ZERO;
+
+    /** Recargo sobre el costo para la propuesta automática de precio (0.30 = 30 %); nulo = sin propuesta automática. */
+    @Column(name = "porcentaje_incremento", precision = 6, scale = 4)
+    private BigDecimal porcentajeIncremento;
+
+    /** Costo promedio ponderado vigente por unidad base (RN-07). */
+    @Column(name = "costo_promedio", precision = 14, scale = 4)
+    private BigDecimal costoPromedio;
+
+    /** Existencia mínima para la alerta de stock bajo; nulo = sin alerta. */
+    @Column(name = "stock_minimo", precision = 14, scale = 4)
+    private BigDecimal stockMinimo;
+
+    /** Meses de garantía que se informan en la factura cuando el producto tiene garantía. */
+    @Column(name = "meses_garantia")
+    private Integer mesesGarantia;
 }

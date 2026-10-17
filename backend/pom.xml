@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
   Nombre: pom.xml
-  Descripción: Descriptor Maven del backend: Spring Boot 3, JPA, PostgreSQL, JWT, OpenAPI, Javadoc, JaCoCo y PIT (mutación).
+  Descripción: Descriptor Maven del backend: Spring Boot 3, JPA, PostgreSQL, JWT, OpenAPI, Apache POI (Excel), Javadoc, JaCoCo y PIT (mutación).
   Fecha de creación: 2026-10-07
-  Fecha de actualización: 2026-10-07
+  Fecha de actualización: 2026-10-16
   Autor: Equipo Ferretería
-  Versión: 1.0.0
+  Versión: 1.1.0
 -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
@@ -29,6 +29,7 @@
     <springdoc.version>2.6.0</springdoc.version>
     <testcontainers.version>1.21.4</testcontainers.version>
     <pitest.version>1.16.1</pitest.version>
+    <poi.version>5.3.0</poi.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
   </properties>
 
@@ -43,6 +44,8 @@
     <dependency><groupId>org.flywaydb</groupId><artifactId>flyway-database-postgresql</artifactId></dependency>
     <dependency><groupId>org.projectlombok</groupId><artifactId>lombok</artifactId><optional>true</optional></dependency>
     <dependency><groupId>org.springdoc</groupId><artifactId>springdoc-openapi-starter-webmvc-ui</artifactId><version>${springdoc.version}</version></dependency>
+    <!-- Importación y exportación de Excel (RF-10) -->
+    <dependency><groupId>org.apache.poi</groupId><artifactId>poi-ooxml</artifactId><version>${poi.version}</version></dependency>
     <dependency><groupId>io.jsonwebtoken</groupId><artifactId>jjwt-api</artifactId><version>${jjwt.version}</version></dependency>
     <dependency><groupId>io.jsonwebtoken</groupId><artifactId>jjwt-impl</artifactId><version>${jjwt.version}</version><scope>runtime</scope></dependency>
     <dependency><groupId>io.jsonwebtoken</groupId><artifactId>jjwt-jackson</artifactId><version>${jjwt.version}</version><scope>runtime</scope></dependency>

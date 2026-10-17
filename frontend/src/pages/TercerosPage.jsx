@@ -1,10 +1,10 @@
 /*
  * Nombre: TercerosPage.jsx
- * Descripción: CRUD de terceros (clientes/proveedores): campos condicionales por tipo de persona (RN-06) con Formik + Yup.
+ * Descripción: CRUD de terceros (clientes/proveedores): campos condicionales por tipo de persona (RN-06) con Formik + Yup y exportación a Excel.
  * Fecha de creación: 2026-10-07
- * Fecha de actualización: 2026-10-07
+ * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 import { useCallback, useEffect, useState } from 'react';
 import { Box, Button, Checkbox, Chip, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, FormControlLabel, FormHelperText,
@@ -19,6 +19,8 @@ import { useAuth } from '../auth/AuthContext';
 import ConfirmDialog from '../components/ConfirmDialog';
 import FormTextField from '../components/FormTextField';
 import { useNotify } from '../components/Notifier';
+import BotonDescarga from '../components/BotonDescarga';
+import { puede } from '../utils/permisos';
 import { terceroSchema } from '../validation/schemas';
 import { mensajeDeError, traducirValidacion } from '../utils/mensajes';
 
@@ -82,7 +84,10 @@ export default function TercerosPage() {
     <section aria-labelledby="terceros-titulo">
       <Stack direction={{ xs: 'column', sm: 'row' }} justifyContent="space-between" gap={2} mb={2}>
         <Typography id="terceros-titulo" variant="h4" component="h1">{t('tercero.titulo')}</Typography>
-        {puedeEscribir && <Button variant="contained" startIcon={<AddIcon />} onClick={() => setEditando({})}>{t('tercero.nuevo')}</Button>}
+        <Stack direction="row" gap={1} flexWrap="wrap">
+          {puede(rol, 'exportar.terceros') && <BotonDescarga obtener={() => api.exportar('terceros')} />}
+          {puedeEscribir && <Button variant="contained" startIcon={<AddIcon />} onClick={() => setEditando({})}>{t('tercero.nuevo')}</Button>}
+        </Stack>
       </Stack>
       <TextField type="search" label={t('comun.buscar')} value={q} fullWidth sx={{ mb: 2 }}
         onChange={(e) => { setQ(e.target.value.slice(0, 100)); setPagina(0); }} />

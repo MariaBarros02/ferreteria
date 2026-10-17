@@ -2,9 +2,9 @@
  * Nombre: Precio.java
  * Descripción: Entidad JPA de precio: costo promedio, porcentaje, precio propuesto y vigente tras aprobación (RF-07, RF-16, RN-07).
  * Fecha de creación: 2026-10-07
- * Fecha de actualización: 2026-10-07
+ * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 package com.ferreteria.inventario.domain.model;
 
@@ -52,6 +52,34 @@ public class Precio {
     @Builder.Default
     @Column(name = "estado_aprobacion", nullable = false, length = 20)
     private String estadoAprobacion = "propuesto";
+
+    /** Usuario que aprobó o rechazó la propuesta. */
+    @Column(name = "usuario_aprobador")
+    private Integer usuarioAprobador;
+
+    /** Usuario que propuso el precio. */
+    @Column(name = "usuario_proponente")
+    private Integer usuarioProponente;
+
+    /** Forma de cálculo: recargo, margen o manual. */
+    @Column(name = "modo_calculo", length = 10)
+    private String modoCalculo;
+
+    /** Justificación de la propuesta (obligatoria si es manual). */
+    @Column(length = 255)
+    private String motivo;
+
+    /** Motivo del rechazo. */
+    @Column(name = "motivo_rechazo", length = 255)
+    private String motivoRechazo;
+
+    /** Fecha de la propuesta. */
+    @Column(name = "fecha_propuesta", insertable = false, updatable = false)
+    private LocalDateTime fechaPropuesta;
+
+    /** Fecha de la decisión (aprobación o rechazo). */
+    @Column(name = "fecha_decision")
+    private LocalDateTime fechaDecision;
 
     /** Fecha desde la cual rige el precio. */
     @Column(name = "fecha_vigencia")

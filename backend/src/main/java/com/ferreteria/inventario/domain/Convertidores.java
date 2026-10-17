@@ -2,7 +2,7 @@
  * Nombre: Convertidores.java
  * Descripción: Convertidores JPA entre enumerados Java y los tipos ENUM nativos de PostgreSQL.
  * Fecha de creación: 2026-10-07
- * Fecha de actualización: 2026-10-07
+ * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
  * Versión: 1.0.0
  */
@@ -80,5 +80,49 @@ public final class Convertidores {
     /** Convertidor de {@link TipoMovimiento}. */
     @Converter public static class TipoMovimientoConverter extends Base<TipoMovimiento> {
         public TipoMovimientoConverter() { super(TipoMovimiento.class); }
+    }
+    /** Convertidor de {@link EstadoInventario}. */
+    @Converter public static class EstadoInventarioConverter extends Base<EstadoInventario> {
+        public EstadoInventarioConverter() { super(EstadoInventario.class); }
+    }
+    /** Convertidor de {@link EstadoReserva}. */
+    @Converter public static class EstadoReservaConverter extends Base<EstadoReserva> {
+        public EstadoReservaConverter() { super(EstadoReserva.class); }
+    }
+    /** Convertidor de {@link EstadoAprobacion}. */
+    @Converter public static class EstadoAprobacionConverter extends Base<EstadoAprobacion> {
+        public EstadoAprobacionConverter() { super(EstadoAprobacion.class); }
+    }
+    /** Convertidor de {@link EstadoSesionConteo}. */
+    @Converter public static class EstadoSesionConteoConverter extends Base<EstadoSesionConteo> {
+        public EstadoSesionConteoConverter() { super(EstadoSesionConteo.class); }
+    }
+    /** Convertidor de {@link EstadoConteo}. */
+    @Converter public static class EstadoConteoConverter extends Base<EstadoConteo> {
+        public EstadoConteoConverter() { super(EstadoConteo.class); }
+    }
+    /** Convertidor de {@link TipoDevolucion}. */
+    @Converter public static class TipoDevolucionConverter extends Base<TipoDevolucion> {
+        public TipoDevolucionConverter() { super(TipoDevolucion.class); }
+    }
+    /** Convertidor de {@link EstadoProductoDevuelto}. */
+    @Converter public static class EstadoProductoDevueltoConverter extends Base<EstadoProductoDevuelto> {
+        public EstadoProductoDevueltoConverter() { super(EstadoProductoDevuelto.class); }
+    }
+    /** Convertidor de {@link TratamientoDevolucion}. */
+    @Converter public static class TratamientoDevolucionConverter extends Base<TratamientoDevolucion> {
+        public TratamientoDevolucionConverter() { super(TratamientoDevolucion.class); }
+    }
+    /** Convertidor de {@link TipoAjuste}. */
+    @Converter public static class TipoAjusteConverter extends Base<TipoAjuste> {
+        public TipoAjusteConverter() { super(TipoAjuste.class); }
+    }
+    /** Convertidor de {@link EstadoCierre}. */
+    @Converter public static class EstadoCierreConverter extends Base<EstadoCierre> {
+        public EstadoCierreConverter() { super(EstadoCierre.class); }
+    }
+    /** Convertidor de {@link EstadoImportacion}. */
+    @Converter public static class EstadoImportacionConverter extends Base<EstadoImportacion> {
+        public EstadoImportacionConverter() { super(EstadoImportacion.class); }
     }
 }

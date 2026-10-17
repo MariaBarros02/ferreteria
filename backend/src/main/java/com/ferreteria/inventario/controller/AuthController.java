@@ -41,8 +41,7 @@ public class AuthController {
      * @return token JWT
      */
     @PostMapping("/login")
-    @Operation(summary = "Iniciar sesión", description = "Devuelve un JWT Bearer. 5 fallos seguidos bloquean la cuenta 15 minutos (429).",
-            security = {})
+    @Operation(summary = "Iniciar sesión", description = "Devuelve un JWT bearer. 5 fallos seguidos bloquean la cuenta 15 minutos (429).")
     public LoginResponse login(@Valid @RequestBody LoginRequest req) {
         return auth.login(req);
     }

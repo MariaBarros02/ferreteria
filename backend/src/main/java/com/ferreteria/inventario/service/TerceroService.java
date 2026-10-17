@@ -2,9 +2,9 @@
  * Nombre: TerceroService.java
  * Descripción: Casos de uso de terceros (clientes/proveedores): CRUD con reglas RN-06 y unicidad de identificación (RF-06).
  * Fecha de creación: 2026-10-07
- * Fecha de actualización: 2026-10-07
+ * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 package com.ferreteria.inventario.service;
 
@@ -15,6 +15,11 @@ import com.ferreteria.inventario.dto.TerceroRequest;
 import com.ferreteria.inventario.dto.TerceroResponse;
 import com.ferreteria.inventario.exception.ApiException;
 import com.ferreteria.inventario.repository.TerceroRepository;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -29,6 +34,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class TerceroService {
 
     private final TerceroRepository terceros;
+    private final EventoAuditoriaService eventos;
+    private final ContextoSolicitud contexto;
 
     /**
      * Crea un tercero.
@@ -41,7 +48,10 @@ public class TerceroService {
         validarIdentificacion(req.numeroIdentificacion().trim(), null);
         Tercero t = new Tercero();
         aplicar(t, req);
-        return TerceroResponse.de(terceros.save(t));
+        t = terceros.save(t);
+        eventos.registrar(contexto.actor(), Auditables.TERCEROS, Auditables.CREAR, "TERCERO", t.getId(),
+                "Tercero creado: " + TerceroResponse.nombreDe(t) + " (" + t.getNumeroIdentificacion() + ")", resumen(t));
+        return TerceroResponse.de(t);
     }
 
     /**
@@ -55,8 +65,12 @@ public class TerceroService {
     public TerceroResponse actualizar(Long id, TerceroRequest req) {
         Tercero t = buscar(id);
         validarIdentificacion(req.numeroIdentificacion().trim(), id);
+        Map<String, Object> antes = resumen(t);
         aplicar(t, req);
-        return TerceroResponse.de(terceros.save(t));
+        t = terceros.save(t);
+        eventos.registrar(contexto.actor(), Auditables.TERCEROS, Auditables.ACTUALIZAR, "TERCERO", t.getId(),
+                "Tercero actualizado: " + TerceroResponse.nombreDe(t), Map.of("antes", antes, "despues", resumen(t)));
+        return TerceroResponse.de(t);
     }
 
     /**
@@ -89,9 +103,39 @@ public class TerceroService {
      */
     @Transactional
     public void eliminar(Long id) {
-        buscar(id);
+        Tercero t = buscar(id);
         terceros.deleteById(id);
         terceros.flush();
+        eventos.registrar(contexto.actor(), Auditables.TERCEROS, Auditables.ELIMINAR, "TERCERO", id,
+                "Tercero eliminado (sin documentos): " + TerceroResponse.nombreDe(t), null);
+    }
+
+    /**
+     * Búsqueda para selectores de cliente o proveedor (nombre, identificación o correo).
+     *
+     * @param q texto
+     * @param rol "cliente" o "proveedor"
+     * @param tamano máximo de resultados (1–50)
+     * @return coincidencias con el rol pedido
+     */
+    @Transactional(readOnly = true)
+    public List<TerceroResponse> buscarParaSeleccion(String q, String rol, int tamano) {
+        boolean clientes = !"proveedor".equalsIgnoreCase(rol);
+        boolean proveedores = !"cliente".equalsIgnoreCase(rol);
+        return terceros.buscarPorRol(q == null ? "" : q.trim(), clientes, proveedores,
+                        PageRequest.of(0, Math.min(Math.max(tamano, 1), 50), Sort.by("id")))
+                .getContent().stream().map(TerceroResponse::de).toList();
+    }
+
+    private static Map<String, Object> resumen(Tercero t) {
+        Map<String, Object> m = new LinkedHashMap<>();
+        m.put("tipoPersona", String.valueOf(t.getTipoPersona()));
+        m.put("identificacion", t.getTipoIdentificacion() + " " + t.getNumeroIdentificacion());
+        m.put("nombre", TerceroResponse.nombreDe(t));
+        m.put("ciudad", t.getCiudad());
+        m.put("cliente", t.isCliente());
+        m.put("proveedor", t.isProveedor());
+        return m;
     }
 
     private Tercero buscar(Long id) {

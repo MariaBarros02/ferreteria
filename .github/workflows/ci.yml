@@ -1,0 +1,239 @@
+######################################################################
+# Nombre: ci.yml
+# Descripción: Integración continua: base de datos (DDL, migraciones, seed, pruebas SQL y verificaciones),
+#              backend (pruebas unitarias e integración con Testcontainers), frontend (Vitest, build, auditoría
+#              de dependencias de producción) y E2E (Playwright contra backend + frontend reales).
+#              Permisos mínimos (solo lectura) y acciones fijadas por SHA de commit.
+# Fecha de creación: 2026-10-16
+# Fecha de actualización: 2026-10-16
+# Autor: Equipo Ferretería
+# Versión: 1.0.0
+######################################################################
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    # Ramas de trabajo: los checks quedan asociados al commit y se ven en el PR aunque el PR lo haya creado
+    # el workflow automático (los eventos generados con GITHUB_TOKEN no disparan otros workflows).
+    branches: [main, "feature/**", "fix/**"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+env:
+  JAVA_VERSION: "21"
+  NODE_VERSION: "20"
+
+jobs:
+  base-de-datos:
+    name: Base de datos (PostgreSQL 16)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ci" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: ci
+      PGPASSWORD: ci
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with: { persist-credentials: false }
+      - name: Instalar cliente psql
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+      - name: DDL + migraciones + seed + pruebas SQL + verificaciones
+        run: bash database/init-db.sh
+      - name: Las migraciones son idempotentes (segunda ejecución sobre la misma base)
+        run: |
+          for f in $(ls database/migrations/V*__*.sql | sed -E 's|.*/V([0-9]+)__.*|\1 &|' | sort -n | awk '{print $2}'); do
+            psql -v ON_ERROR_STOP=1 -d ferreteria_db -f "$f" > /dev/null
+          done
+      - name: Resumen
+        if: always()
+        run: |
+          {
+            echo "### Base de datos"
+            psql -d ferreteria_db -tAc "SELECT regla || ': ' || resultado || ' (' || COUNT(*) || ')' FROM test_resultados GROUP BY regla, resultado ORDER BY 1" 2>/dev/null | sed 's/^/- /' || echo "- sin resultados"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  backend:
+    name: Backend (Maven verify)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with: { persist-credentials: false }
+      - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - name: Pruebas unitarias e integración (Testcontainers usa el Docker del runner)
+        working-directory: backend
+        run: mvn -B -ntp verify
+      - name: Resumen de pruebas
+        if: always()
+        working-directory: backend
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import glob, xml.etree.ElementTree as ET
+          print("### Backend")
+          for nombre, patron in (("Unitarias (surefire)", "target/surefire-reports/TEST-*.xml"), ("Integración (failsafe)", "target/failsafe-reports/TEST-*.xml")):
+              t = f = e = s = 0
+              for x in glob.glob(patron):
+                  r = ET.parse(x).getroot()
+                  t += int(r.get("tests", 0)); f += int(r.get("failures", 0)); e += int(r.get("errors", 0)); s += int(r.get("skipped", 0))
+              print(f"- {nombre}: {t} pruebas, {f} fallos, {e} errores, {s} omitidas")
+          PY
+      - name: Publicar reportes
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: backend-reportes
+          path: |
+            backend/target/surefire-reports
+            backend/target/failsafe-reports
+            backend/target/site/jacoco
+          if-no-files-found: ignore
+          retention-days: 14
+
+  frontend:
+    name: Frontend (Vitest + build)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - name: Pruebas unitarias y de componentes
+        run: npx vitest run --reporter=default --reporter=junit --outputFile.junit=reports/vitest-junit.xml
+      - name: Build de producción
+        run: npm run build
+      - name: Auditoría de dependencias de producción
+        # Las dependencias de desarrollo (vitest, vite, stryker) tienen avisos conocidos documentados en el README;
+        # no se distribuyen en la imagen de producción.
+        run: npm audit --omit=dev --audit-level=high
+      - name: Resumen
+        if: always()
+        run: |
+          python3 - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import os, xml.etree.ElementTree as ET
+          print("### Frontend")
+          p = "reports/vitest-junit.xml"
+          if os.path.exists(p):
+              r = ET.parse(p).getroot()
+              print(f"- Vitest: {r.get('tests')} pruebas, {r.get('failures')} fallos, {r.get('errors')} errores")
+          else:
+              print("- Vitest: sin reporte")
+          PY
+      - name: Publicar reportes
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: frontend-reportes
+          path: frontend/reports
+          if-no-files-found: ignore
+          retention-days: 14
+
+  e2e:
+    name: E2E (Playwright)
+    needs: [base-de-datos, backend, frontend]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U ci" --health-interval 5s --health-timeout 5s --health-retries 20
+    env:
+      PGHOST: localhost
+      PGPORT: "5432"
+      PGUSER: ci
+      PGPASSWORD: ci
+      E2E_PASSWORD: Ferreteria2026*
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with: { persist-credentials: false }
+      - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        with:
+          distribution: temurin
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: maven
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Base con datos semilla (sin pruebas SQL, que ya corren en su propio job)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client && bash database/init-db.sh --sin-pruebas
+      - name: Construir y arrancar el backend
+        working-directory: backend
+        run: |
+          mvn -B -ntp -DskipTests package
+          # Secreto efímero solo para esta ejecución (no se guarda en el repositorio).
+          export JWT_SECRET="$(openssl rand -hex 32)"
+          export DB_URL="jdbc:postgresql://localhost:5432/ferreteria_db?stringtype=unspecified" DB_USER=ci DB_PASSWORD=ci
+          export DEMO_PASSWORD="$E2E_PASSWORD" CORS_ORIGINS="http://localhost:4173"
+          nohup java -jar target/inventario-backend-*.jar > ../backend.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -s -o /dev/null -w '%{http_code}' -X POST -H 'Content-Type: application/json' -d '{}' http://localhost:8080/api/auth/login | grep -qE '^(400|401)$' && exit 0
+            sleep 3
+          done
+          echo "El backend no arrancó"; tail -100 ../backend.log; exit 1
+      - name: Construir y servir el frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run build
+          VITE_PROXY_TARGET=http://localhost:8080 nohup npx vite preview --port 4173 --strictPort > ../frontend.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf http://localhost:4173/ > /dev/null && exit 0; sleep 2; done
+          echo "El frontend no arrancó"; cat ../frontend.log; exit 1
+      - name: Navegador de Playwright
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+      - name: Pruebas E2E
+        working-directory: frontend
+        env:
+          E2E_BASE_URL: http://localhost:4173
+          CI: "true"
+        run: npx playwright test
+      - name: Publicar reporte E2E y registros
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-reporte
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+            backend.log
+            frontend.log
+          if-no-files-found: ignore
+          retention-days: 14

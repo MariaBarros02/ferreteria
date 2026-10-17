@@ -2,13 +2,14 @@
  * Nombre: MovimientoInventario.java
  * Descripción: Entidad JPA de movimiento de inventario / auditoría con los ocho campos de RF-08; inmutable (RN-16).
  * Fecha de creación: 2026-10-07
- * Fecha de actualización: 2026-10-07
+ * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 package com.ferreteria.inventario.domain.model;
 
 import com.ferreteria.inventario.domain.Convertidores;
+import com.ferreteria.inventario.domain.enums.EstadoInventario;
 import com.ferreteria.inventario.domain.enums.TipoMovimiento;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
@@ -74,4 +75,14 @@ public class MovimientoInventario {
     /** Movimiento original que este rectifica (RN-16). */
     @Column(name = "id_movimiento_original")
     private Long idMovimientoOriginal;
+
+    /** Saldo afectado (disponible, reservado o dañado); valor anterior/nuevo se refieren a este saldo. */
+    @Builder.Default
+    @Convert(converter = Convertidores.EstadoInventarioConverter.class)
+    @Column(name = "estado_inventario", nullable = false)
+    private EstadoInventario estadoInventario = EstadoInventario.DISPONIBLE;
+
+    /** Lote afectado, si aplica. */
+    @Column(name = "id_lote")
+    private Long idLote;
 }

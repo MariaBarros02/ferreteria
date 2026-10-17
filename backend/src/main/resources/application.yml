@@ -2,16 +2,16 @@
 # Nombre: application.yml
 # Descripción: Configuración base de Spring Boot (datasource, JPA, Flyway, JWT, CORS, OpenAPI, i18n). Se parametriza por variables de entorno.
 # Fecha de creación: 2026-10-07
-# Fecha de actualización: 2026-10-07
+# Fecha de actualización: 2026-10-16
 # Autor: Equipo Ferretería
-# Versión: 1.0.0
+# Versión: 1.1.0
 ######################################################################
 spring:
   application:
     name: inventario-backend
   datasource:
     # stringtype=unspecified permite escribir cadenas en columnas ENUM nativas de PostgreSQL
-    url: ${DB_URL:jdbc:postgresql://localhost:5433/ferreteria_db?stringtype=unspecified}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/ferreteria_db?stringtype=unspecified}
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:postgres}
   jpa:
@@ -27,6 +27,10 @@ spring:
     basename: messages
     encoding: UTF-8
     fallback-to-system-locale: false
+  servlet:
+    multipart:
+      max-file-size: ${MAX_ARCHIVO:5MB}       # importación de Excel (RF-10)
+      max-request-size: ${MAX_SOLICITUD:6MB}
   jackson:
     default-property-inclusion: non_null
     deserialization:
@@ -50,6 +54,25 @@ app:
     lock-minutes: ${LOCK_MINUTES:15}
   bootstrap:
     demo-password: ${DEMO_PASSWORD:}   # si se define, reemplaza 'hash_demo' del seed por BCrypt(demo-password)
+  # Zona horaria del negocio: define "hoy" (vencimientos) y los meses de los cierres. Las fechas se guardan en UTC.
+  zona-horaria: ${ZONA_HORARIA:America/Bogota}
+  ventas:
+    descuento-maximo: ${DESCUENTO_MAXIMO:10}          # % máximo de descuento por línea (0 = sin descuentos)
+  inventario:
+    dias-alerta-vencimiento: ${DIAS_ALERTA_VENCIMIENTO:30}
+  precios:
+    modo: ${MODO_PRECIO:recargo}                      # recargo (RN-07: P = C × (1 + r)) o margen (P = C / (1 − m))
+    multiplo-redondeo: ${MULTIPLO_REDONDEO:1}         # 1 = pesos enteros; 100 = centenas; 0.01 = centavos
+  reservas:
+    cron-liberacion: ${CRON_RESERVAS:0 15 0 * * *}    # liberación diaria de reservas vencidas
+  # Datos impresos en el comprobante de venta (no se inventan: vacíos se omiten)
+  empresa:
+    nombre: ${EMPRESA_NOMBRE:Ferretería}
+    nit: ${EMPRESA_NIT:}
+    direccion: ${EMPRESA_DIRECCION:}
+    ciudad: ${EMPRESA_CIUDAD:}
+    telefono: ${EMPRESA_TELEFONO:}
+    correo: ${EMPRESA_CORREO:}
 
 springdoc:
   swagger-ui:

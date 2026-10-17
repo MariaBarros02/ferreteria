@@ -2,9 +2,9 @@
  * Nombre: BaseIT.java
  * Descripción: Base de las pruebas de integración: PostgreSQL real con Testcontainers, Flyway, MockMvc y utilidades de datos.
  * Fecha de creación: 2026-10-07
- * Fecha de actualización: 2026-10-07
+ * Fecha de actualización: 2026-10-16
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 package com.ferreteria.inventario.integration;
 
@@ -37,9 +37,17 @@ import org.testcontainers.containers.PostgreSQLContainer;
 @ActiveProfiles("test")
 public abstract class BaseIT {
 
-    static final PostgreSQLContainer<?> PG = new PostgreSQLContainer<>("postgres:16-alpine");
+    /**
+     * Base de pruebas: por defecto un contenedor PostgreSQL (Testcontainers). Si se define la variable
+     * {@code IT_DB_URL} (con {@code IT_DB_USER}/{@code IT_DB_PASSWORD}) se usa esa base existente, útil en entornos
+     * sin Docker; debe ser una base vacía y desechable.
+     */
+    static final String URL_EXTERNA = System.getenv("IT_DB_URL");
+    static final PostgreSQLContainer<?> PG = URL_EXTERNA == null ? new PostgreSQLContainer<>("postgres:16-alpine") : null;
     static {
-        PG.start();
+        if (PG != null) {
+            PG.start();
+        }
     }
 
     private static final AtomicLong SECUENCIA = new AtomicLong(7_800_000_000_000L);
@@ -47,10 +55,10 @@ public abstract class BaseIT {
 
     @DynamicPropertySource
     static void propiedades(DynamicPropertyRegistry r) {
-        String url = PG.getJdbcUrl();
+        String url = PG != null ? PG.getJdbcUrl() : URL_EXTERNA;
         r.add("spring.datasource.url", () -> url + (url.contains("?") ? "&" : "?") + "stringtype=unspecified");
-        r.add("spring.datasource.username", PG::getUsername);
-        r.add("spring.datasource.password", PG::getPassword);
+        r.add("spring.datasource.username", () -> PG != null ? PG.getUsername() : System.getenv().getOrDefault("IT_DB_USER", "postgres"));
+        r.add("spring.datasource.password", () -> PG != null ? PG.getPassword() : System.getenv().getOrDefault("IT_DB_PASSWORD", "postgres"));
     }
 
     @Autowired
@@ -88,6 +96,25 @@ public abstract class BaseIT {
         return jwt.generar(u.getCorreo(), Roles.normalizar(u.getRol().getNombre()));
     }
 
+    /** Identificador del usuario de pruebas del rol (lo crea si no existe). */
+    protected Integer idUsuario(String rolNombre) {
+        tokenPara(rolNombre);
+        return usuarios.findByCorreoIgnoreCase(rolNombre.toLowerCase() + "@test.com").orElseThrow().getId();
+    }
+
+    /** Cabecera Authorization para el rol dado. */
+    protected String bearer(String rolNombre) {
+        return "Bearer " + tokenPara(rolNombre);
+    }
+
+    /** Crea un proveedor persona jurídica. */
+    protected Tercero proveedor() {
+        long n = SECUENCIA_ID.incrementAndGet();
+        return terceros.save(Tercero.builder().tipoPersona(TipoPersona.JURIDICA).tipoIdentificacion(TipoIdentificacion.NIT)
+                .numeroIdentificacion("NIT" + n).razonSocial("Proveedor " + n + " S.A.S.").direccion("Cl 1")
+                .ciudad("Neiva").telefono("6088000000").correo("p" + n + "@x.com").proveedor(true).build());
+    }
+
     /** Crea un usuario con correo explícito o reutiliza el existente. */
     protected Usuario usuario(String correo, String rol, EstadoCuenta estado) {
         return usuarios.findByCorreoIgnoreCase(correo).map(usuarioExistente -> {
@@ -115,6 +142,8 @@ public abstract class BaseIT {
                     .precioPropuesto(valor)
                     .precioVigente(valor)
                     .estadoAprobacion("aprobado")
+                    .usuarioAprobador(idUsuario("Gerencia"))   // V4: un precio aprobado exige aprobador
+                    .fechaVigencia(java.time.LocalDateTime.now(java.time.ZoneOffset.UTC))
                     .build());
         }
         return p;

@@ -3,9 +3,9 @@
 # Nombre: listar_casos.py
 # Descripción: Regenera en docs/CASOS_DE_PRUEBA.md la tabla de casos automatizados extrayendo los IDs de los tests (Java, JS, Python).
 # Fecha de creación: 2026-10-07
-# Fecha de actualización: 2026-10-07
+# Fecha de actualización: 2026-10-16
 # Autor: Equipo Ferretería
-# Versión: 1.0.0
+# Versión: 1.1.0
 ######################################################################
 """Uso: python3 scripts/listar_casos.py   (desde la raíz del repositorio)
 
@@ -33,8 +33,8 @@ def extraer():
     add("backend/src/test/java/**/integration/*IT.java",
         lambda p: "Seguridad" if "Seguridad" in p else "Sistema (BD real)" if "ReglasBase" in p else "Integración / Sistema",
         "JUnit 5 + Spring Test (MockMvc) + Testcontainers", r'@DisplayName\("([^"]+)"\)')
-    add("frontend/src/__tests__/*.test.*", "Unitaria / Componente (frontend)", "Vitest + Testing Library", r"\bit\('([^']+)'")
-    add("frontend/e2e/*.js", "Aceptación E2E", "Playwright", r"\btest\('([^']+)'")
+    add("frontend/src/__tests__/*.test.*", "Unitaria / Componente (frontend)", "Vitest + Testing Library", r"\bit\(\s*[\"']([^\"']+)[\"']")
+    add("frontend/e2e/*.js", "Aceptación E2E", "Playwright", r"\btest\(\s*[\"']([^\"']+)[\"']")
     add("frontend/e2e-selenium/*.mjs", "Aceptación E2E", "Selenium WebDriver", r"\btest\('([^']+)'")
     for p in glob.glob(os.path.join(RAIZ, "tests/scripts/*.py")):
         for m in re.finditer(r"def (test_\w+)", open(p, encoding="utf-8").read()):
