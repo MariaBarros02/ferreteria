@@ -11,7 +11,7 @@ spring:
     name: inventario-backend
   datasource:
     # stringtype=unspecified permite escribir cadenas en columnas ENUM nativas de PostgreSQL
-    url: ${DB_URL:jdbc:postgresql://localhost:5433/ferreteria_db?stringtype=unspecified}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/ferreteria_db?stringtype=unspecified}
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:postgres}
   jpa:
