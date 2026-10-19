@@ -1,10 +1,11 @@
 -- ====================================================================
 -- Nombre: V1__ddl.sql
 -- Descripción: Migración Flyway V1: esquema completo (mismo contenido que 01_ddl.sql, sin control de transacción).
+--              Idempotente: tipos, tablas, índices, secuencias y disparadores se crean solo si no existen.
 -- Fecha de creación: 2026-10-07
--- Fecha de actualización: 2026-10-07
+-- Fecha de actualización: 2026-10-19
 -- Autor: Equipo Ferretería
--- Versión: 1.0.0
+-- Versión: 1.1.0
 -- ====================================================================
 -- =====================================================================
 -- 01_ddl.sql — Creación de tipos, tablas, restricciones e índices
@@ -14,34 +15,60 @@
 
 -- ---------------------------------------------------------------------
 -- 1. Tipos enumerados (representan los estados y catálogos cerrados
---    definidos en las reglas de negocio)
+--    definidos en las reglas de negocio). PostgreSQL no admite
+--    CREATE TYPE IF NOT EXISTS: se verifica en pg_type.
 -- ---------------------------------------------------------------------
-CREATE TYPE tipo_persona_enum        AS ENUM ('natural', 'juridica');
-CREATE TYPE tipo_identificacion_enum AS ENUM ('CC', 'NIT', 'CE', 'PASAPORTE');
-CREATE TYPE tipo_rastreo_enum        AS ENUM ('ninguno', 'lote', 'serie');
-CREATE TYPE estado_documento_enum    AS ENUM ('activo', 'anulado');      -- RN-09
-CREATE TYPE estado_reserva_enum      AS ENUM ('activa', 'liberada_venta',
-                                               'liberada_cancelacion',
-                                               'liberada_vencimiento');   -- RN-03
-CREATE TYPE modalidad_factura_enum   AS ENUM ('electronica', 'impresa'); -- RN-14
-CREATE TYPE estado_aprobacion_enum   AS ENUM ('propuesto', 'aprobado', 'rechazado'); -- RN-07
-CREATE TYPE tipo_movimiento_enum     AS ENUM ('compra', 'venta',
-                                               'devolucion_cliente',
-                                               'devolucion_proveedor',
-                                               'ajuste', 'conteo');       -- RN-08
-CREATE TYPE tipo_devolucion_enum     AS ENUM ('cliente', 'proveedor');
-CREATE TYPE estado_conteo_enum       AS ENUM ('pendiente', 'aprobado', 'rechazado');
-CREATE TYPE estado_cuenta_enum       AS ENUM ('activo', 'inactivo');
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tipo_persona_enum') THEN
+        CREATE TYPE tipo_persona_enum AS ENUM ('natural', 'juridica');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tipo_identificacion_enum') THEN
+        CREATE TYPE tipo_identificacion_enum AS ENUM ('CC', 'NIT', 'CE', 'PASAPORTE');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tipo_rastreo_enum') THEN
+        CREATE TYPE tipo_rastreo_enum AS ENUM ('ninguno', 'lote', 'serie');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_documento_enum') THEN
+        CREATE TYPE estado_documento_enum AS ENUM ('activo', 'anulado');                       -- RN-09
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_reserva_enum') THEN
+        CREATE TYPE estado_reserva_enum AS ENUM ('activa', 'liberada_venta',
+                                                 'liberada_cancelacion',
+                                                 'liberada_vencimiento');                     -- RN-03
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'modalidad_factura_enum') THEN
+        CREATE TYPE modalidad_factura_enum AS ENUM ('electronica', 'impresa');                 -- RN-14
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_aprobacion_enum') THEN
+        CREATE TYPE estado_aprobacion_enum AS ENUM ('propuesto', 'aprobado', 'rechazado');     -- RN-07
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tipo_movimiento_enum') THEN
+        CREATE TYPE tipo_movimiento_enum AS ENUM ('compra', 'venta',
+                                                  'devolucion_cliente',
+                                                  'devolucion_proveedor',
+                                                  'ajuste', 'conteo');                         -- RN-08
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'tipo_devolucion_enum') THEN
+        CREATE TYPE tipo_devolucion_enum AS ENUM ('cliente', 'proveedor');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_conteo_enum') THEN
+        CREATE TYPE estado_conteo_enum AS ENUM ('pendiente', 'aprobado', 'rechazado');
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'estado_cuenta_enum') THEN
+        CREATE TYPE estado_cuenta_enum AS ENUM ('activo', 'inactivo');
+    END IF;
+END $$;
 
 -- ---------------------------------------------------------------------
 -- 2. Seguridad: roles, permisos y usuarios (RF-09)
 -- ---------------------------------------------------------------------
-CREATE TABLE rol (
+CREATE TABLE IF NOT EXISTS rol (
     id_rol      SERIAL PRIMARY KEY,
     nombre      VARCHAR(50) UNIQUE NOT NULL
 );
 
-CREATE TABLE permiso (
+CREATE TABLE IF NOT EXISTS permiso (
     id_permiso   SERIAL PRIMARY KEY,
     id_rol       INTEGER NOT NULL REFERENCES rol(id_rol),
     modulo       VARCHAR(50) NOT NULL,   -- Compras, Ventas, Inventario, Precios, Usuarios, Auditoria, Cierres
@@ -49,7 +76,7 @@ CREATE TABLE permiso (
     UNIQUE (id_rol, modulo)
 );
 
-CREATE TABLE usuario (
+CREATE TABLE IF NOT EXISTS usuario (
     id_usuario     SERIAL PRIMARY KEY,
     nombre         VARCHAR(150) NOT NULL,
     correo         VARCHAR(150) UNIQUE NOT NULL,
@@ -61,7 +88,7 @@ CREATE TABLE usuario (
 -- ---------------------------------------------------------------------
 -- 3. Terceros (RF-06 / RN-06)
 -- ---------------------------------------------------------------------
-CREATE TABLE tercero (
+CREATE TABLE IF NOT EXISTS tercero (
     id_tercero            SERIAL PRIMARY KEY,
     tipo_persona          tipo_persona_enum NOT NULL,
     tipo_identificacion   tipo_identificacion_enum NOT NULL,
@@ -90,7 +117,7 @@ CREATE TABLE tercero (
 -- ---------------------------------------------------------------------
 -- 4. Productos, unidades e inventario (RF-01, RF-02, RN-01, RN-02, RN-03)
 -- ---------------------------------------------------------------------
-CREATE TABLE producto (
+CREATE TABLE IF NOT EXISTS producto (
     id_producto      SERIAL PRIMARY KEY,
     nombre           VARCHAR(150) NOT NULL,
     marca            VARCHAR(100) NOT NULL,
@@ -103,7 +130,7 @@ CREATE TABLE producto (
     UNIQUE (nombre, marca, presentacion)                -- RN-01: referencia única
 );
 
-CREATE TABLE conversion_unidad (
+CREATE TABLE IF NOT EXISTS conversion_unidad (
     id_conversion       SERIAL PRIMARY KEY,
     id_producto         INTEGER NOT NULL REFERENCES producto(id_producto),
     unidad_presentacion VARCHAR(20) NOT NULL,
@@ -112,14 +139,14 @@ CREATE TABLE conversion_unidad (
     UNIQUE (id_producto, unidad_presentacion)
 );
 
-CREATE TABLE inventario (
+CREATE TABLE IF NOT EXISTS inventario (
     id_producto INTEGER PRIMARY KEY REFERENCES producto(id_producto),
     disponible  NUMERIC(14,4) NOT NULL DEFAULT 0 CHECK (disponible >= 0),  -- RN-03
     reservado   NUMERIC(14,4) NOT NULL DEFAULT 0 CHECK (reservado  >= 0),  -- RN-03
     danado      NUMERIC(14,4) NOT NULL DEFAULT 0 CHECK (danado     >= 0)   -- RN-03
 );
 
-CREATE TABLE reserva (
+CREATE TABLE IF NOT EXISTS reserva (
     id_reserva   SERIAL PRIMARY KEY,
     id_producto  INTEGER NOT NULL REFERENCES producto(id_producto),
     id_cliente   INTEGER NOT NULL REFERENCES tercero(id_tercero),
@@ -132,7 +159,7 @@ CREATE TABLE reserva (
 -- ---------------------------------------------------------------------
 -- 5. Compras y recepciones (RF-03, RF-17, RN-09)
 -- ---------------------------------------------------------------------
-CREATE TABLE compra (
+CREATE TABLE IF NOT EXISTS compra (
     id_compra   SERIAL PRIMARY KEY,
     id_proveedor INTEGER NOT NULL REFERENCES tercero(id_tercero),
     fecha        TIMESTAMP NOT NULL DEFAULT now(),
@@ -140,7 +167,7 @@ CREATE TABLE compra (
     motivo_anulacion VARCHAR(255)
 );
 
-CREATE TABLE linea_compra (
+CREATE TABLE IF NOT EXISTS linea_compra (
     id_linea_compra   SERIAL PRIMARY KEY,
     id_compra         INTEGER NOT NULL REFERENCES compra(id_compra),
     id_producto       INTEGER NOT NULL REFERENCES producto(id_producto),
@@ -151,7 +178,7 @@ CREATE TABLE linea_compra (
         CHECK (cantidad_recibida <= cantidad_pedida)                     -- RF-03/RF-17
 );
 
-CREATE TABLE documento_ingreso (
+CREATE TABLE IF NOT EXISTS documento_ingreso (
     id_documento_ingreso SERIAL PRIMARY KEY,
     consecutivo          VARCHAR(30) UNIQUE NOT NULL,
     estado                estado_documento_enum NOT NULL DEFAULT 'activo', -- RN-09
@@ -160,7 +187,7 @@ CREATE TABLE documento_ingreso (
     fecha                 TIMESTAMP NOT NULL DEFAULT now()
 );
 
-CREATE TABLE recepcion (
+CREATE TABLE IF NOT EXISTS recepcion (
     id_recepcion         SERIAL PRIMARY KEY,
     id_linea_compra      INTEGER NOT NULL REFERENCES linea_compra(id_linea_compra),
     id_documento_ingreso INTEGER NOT NULL REFERENCES documento_ingreso(id_documento_ingreso),
@@ -171,7 +198,7 @@ CREATE TABLE recepcion (
 -- ---------------------------------------------------------------------
 -- 6. Ventas y facturación (RF-04, RN-11, RN-14)
 -- ---------------------------------------------------------------------
-CREATE TABLE venta (
+CREATE TABLE IF NOT EXISTS venta (
     id_venta      SERIAL PRIMARY KEY,
     numero_interno VARCHAR(30) UNIQUE NOT NULL,          -- RN-14
     id_cliente    INTEGER NOT NULL REFERENCES tercero(id_tercero),
@@ -179,7 +206,7 @@ CREATE TABLE venta (
     estado        estado_documento_enum NOT NULL DEFAULT 'activo'
 );
 
-CREATE TABLE linea_venta (
+CREATE TABLE IF NOT EXISTS linea_venta (
     id_linea_venta  SERIAL PRIMARY KEY,
     id_venta        INTEGER NOT NULL REFERENCES venta(id_venta),
     id_producto     INTEGER NOT NULL REFERENCES producto(id_producto),
@@ -187,7 +214,7 @@ CREATE TABLE linea_venta (
     precio_aplicado NUMERIC(14,4) NOT NULL CHECK (precio_aplicado >= 0)
 );
 
-CREATE TABLE factura (
+CREATE TABLE IF NOT EXISTS factura (
     id_factura      SERIAL PRIMARY KEY,
     id_venta        INTEGER UNIQUE NOT NULL REFERENCES venta(id_venta),
     numeracion_dian VARCHAR(30) UNIQUE,                   -- RN-14: distinta del numero_interno
@@ -200,7 +227,7 @@ CREATE TABLE factura (
 -- ---------------------------------------------------------------------
 -- 7. Precios (RF-07, RF-16, RN-07)
 -- ---------------------------------------------------------------------
-CREATE TABLE precio (
+CREATE TABLE IF NOT EXISTS precio (
     id_precio            SERIAL PRIMARY KEY,
     id_producto          INTEGER NOT NULL REFERENCES producto(id_producto),
     costo_promedio       NUMERIC(14,4) NOT NULL CHECK (costo_promedio >= 0),
@@ -219,7 +246,7 @@ CREATE TABLE precio (
 -- ---------------------------------------------------------------------
 -- 8. Movimientos de inventario y auditoría (RF-08, RN-08, RN-16, RNF-06)
 -- ---------------------------------------------------------------------
-CREATE TABLE movimiento_inventario (
+CREATE TABLE IF NOT EXISTS movimiento_inventario (
     id_movimiento          SERIAL PRIMARY KEY,
     tipo                   tipo_movimiento_enum NOT NULL,
     id_producto            INTEGER NOT NULL REFERENCES producto(id_producto),
@@ -234,7 +261,7 @@ CREATE TABLE movimiento_inventario (
     id_movimiento_original INTEGER REFERENCES movimiento_inventario(id_movimiento) -- RN-16
 );
 
-CREATE TABLE devolucion (
+CREATE TABLE IF NOT EXISTS devolucion (
     id_devolucion       SERIAL PRIMARY KEY,
     tipo                tipo_devolucion_enum NOT NULL,
     id_documento_origen VARCHAR(50) NOT NULL,
@@ -244,7 +271,7 @@ CREATE TABLE devolucion (
     id_movimiento       INTEGER NOT NULL REFERENCES movimiento_inventario(id_movimiento)
 );
 
-CREATE TABLE conteo_fisico (
+CREATE TABLE IF NOT EXISTS conteo_fisico (
     id_conteo          SERIAL PRIMARY KEY,
     id_producto        INTEGER NOT NULL REFERENCES producto(id_producto),
     cantidad_contada   NUMERIC(14,4) NOT NULL CHECK (cantidad_contada >= 0),
@@ -255,7 +282,7 @@ CREATE TABLE conteo_fisico (
     id_movimiento_ajuste INTEGER REFERENCES movimiento_inventario(id_movimiento)
 );
 
-CREATE TABLE cierre_periodo (
+CREATE TABLE IF NOT EXISTS cierre_periodo (
     id_cierre    SERIAL PRIMARY KEY,
     periodo      DATE NOT NULL UNIQUE,
     fecha_cierre TIMESTAMP NOT NULL DEFAULT now(),
@@ -266,15 +293,16 @@ CREATE TABLE cierre_periodo (
 -- ---------------------------------------------------------------------
 -- 9. Índices de apoyo a las consultas más frecuentes
 -- ---------------------------------------------------------------------
-CREATE INDEX idx_movimiento_producto_fecha ON movimiento_inventario (id_producto, fecha_hora);
-CREATE INDEX idx_linea_venta_producto      ON linea_venta (id_producto);
-CREATE INDEX idx_linea_compra_producto     ON linea_compra (id_producto);
-CREATE INDEX idx_reserva_producto_estado   ON reserva (id_producto, estado);
-CREATE INDEX idx_precio_producto_estado    ON precio (id_producto, estado_aprobacion);
+CREATE INDEX IF NOT EXISTS idx_movimiento_producto_fecha ON movimiento_inventario (id_producto, fecha_hora);
+CREATE INDEX IF NOT EXISTS idx_linea_venta_producto      ON linea_venta (id_producto);
+CREATE INDEX IF NOT EXISTS idx_linea_compra_producto     ON linea_compra (id_producto);
+CREATE INDEX IF NOT EXISTS idx_reserva_producto_estado   ON reserva (id_producto, estado);
+CREATE INDEX IF NOT EXISTS idx_precio_producto_estado    ON precio (id_producto, estado_aprobacion);
 
 -- ---------------------------------------------------------------------
 -- 10. Disparadores que hacen cumplir RN-09 (nunca eliminar documentos)
---     y RN-16 (nunca editar un movimiento histórico)
+--     y RN-16 (nunca editar un movimiento histórico).
+--     Las funciones se reemplazan; cada disparador se borra antes de crearse.
 -- ---------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION fn_bloquear_borrado()
 RETURNS TRIGGER AS $$
@@ -285,18 +313,22 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_bloquear_borrado_compra ON compra;
 CREATE TRIGGER trg_bloquear_borrado_compra
     BEFORE DELETE ON compra
     FOR EACH ROW EXECUTE FUNCTION fn_bloquear_borrado();
 
+DROP TRIGGER IF EXISTS trg_bloquear_borrado_venta ON venta;
 CREATE TRIGGER trg_bloquear_borrado_venta
     BEFORE DELETE ON venta
     FOR EACH ROW EXECUTE FUNCTION fn_bloquear_borrado();
 
+DROP TRIGGER IF EXISTS trg_bloquear_borrado_doc_ingreso ON documento_ingreso;
 CREATE TRIGGER trg_bloquear_borrado_doc_ingreso
     BEFORE DELETE ON documento_ingreso
     FOR EACH ROW EXECUTE FUNCTION fn_bloquear_borrado();
 
+DROP TRIGGER IF EXISTS trg_bloquear_borrado_factura ON factura;
 CREATE TRIGGER trg_bloquear_borrado_factura
     BEFORE DELETE ON factura
     FOR EACH ROW EXECUTE FUNCTION fn_bloquear_borrado();
@@ -309,6 +341,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS trg_bloquear_update_movimiento ON movimiento_inventario;
 CREATE TRIGGER trg_bloquear_update_movimiento
     BEFORE UPDATE OR DELETE ON movimiento_inventario
     FOR EACH ROW EXECUTE FUNCTION fn_bloquear_edicion_movimiento();
@@ -317,7 +350,7 @@ CREATE TRIGGER trg_bloquear_update_movimiento
 -- 11. Secuencias de numeración (RN-14: número interno de venta y numeración
 --     fiscal simulada son campos distintos). Inician en 1000 para no chocar
 --     con los consecutivos del seed (VTA-000001, VTA-000002).
+--     IF NOT EXISTS conserva el valor actual si la secuencia ya existe.
 -- ---------------------------------------------------------------------
-CREATE SEQUENCE seq_numero_venta   START WITH 1000 INCREMENT BY 1;
-CREATE SEQUENCE seq_numeracion_dian START WITH 1000 INCREMENT BY 1;
-
+CREATE SEQUENCE IF NOT EXISTS seq_numero_venta    START WITH 1000 INCREMENT BY 1;
+CREATE SEQUENCE IF NOT EXISTS seq_numeracion_dian START WITH 1000 INCREMENT BY 1;
