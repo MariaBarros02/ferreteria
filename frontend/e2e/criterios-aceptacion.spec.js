@@ -157,8 +157,8 @@ test.describe("HU-05 venta", () => {
     await entrar(page, "laura.ventas@ferreteria.com");
     await page.goto("/ventas/nueva");
     // Selectores con búsqueda (RF-11): ya no se escriben identificadores numéricos.
-    await page.getByRole("combobox", { name: /^cliente/i }).fill("Juan");
-    await page.getByRole("option", { name: /Juan Pérez/i }).click();
+    await page.getByRole("combobox", { name: /^cliente/i }).fill("1002003000");
+    await page.getByRole("option",{ name: /1002003000/ }).click();
     const producto = page.getByRole("combobox", { name: /^producto/i });
     await producto.fill("7701234500015");
     await producto.press("Enter");

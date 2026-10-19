@@ -65,6 +65,8 @@ test.describe.serial("Flujo operativo completo", () => {
       await dialogo.getByLabel(/cantidad a recibir/i).first().fill(cantidad);
       await dialogo.getByRole("button", { name: /registrar recepción/i }).click();
       await expect(page.getByText("Recepción registrada")).toBeVisible();
+      await expect(dialogo).toBeHidden();   // espera a que termine de cerrarse antes de la siguiente recepción
+
     }
     await expect(page.getByText("Recibida", { exact: true }).first()).toBeVisible();
     await expect(page.getByRole("button", { name: /registrar recepción/i })).toHaveCount(0);
@@ -95,7 +97,7 @@ test.describe.serial("Flujo operativo completo", () => {
   test("E2E-FLU-04 Ventas vende con lector de código, ve el detalle, el comprobante interno y descarga el PDF", async ({ page }) => {
     await entrar(page, "laura.ventas@ferreteria.com");
     await page.goto("/ventas/nueva");
-    await elegir(page, /^cliente/i, "Juan", /Juan Pérez/i);
+    await elegir(page, /^cliente/i, "1002003000", /1002003000/);
     await escanear(page, /^producto/i, TORNILLO);
     await escanear(page, /^producto/i, TORNILLO);   // segundo escaneo suma una unidad
     await expect(page.getByLabel("Cantidad 1")).toHaveValue("2");
@@ -116,7 +118,8 @@ test.describe.serial("Flujo operativo completo", () => {
     await page.getByLabel(/^motivo/i).fill("Cliente compró de más");
     await page.getByRole("button", { name: /registrar devolución/i }).click();
     await page.getByRole("dialog").getByRole("button", { name: /registrar devolución/i }).click();
-    await expect(page.getByRole("heading", { name: /^devolución /i })).toBeVisible();
+    await expect(page).toHaveURL(/\/devoluciones\/\d+$/, { timeout: 15000 });
+    await expect(page.getByRole("heading", { name: /^devolución /i })).toBeVisible({ timeout: 15000 });
   });
 
   test("E2E-FLU-05 no se puede devolver más de lo vendido", async ({ page }) => {
@@ -152,7 +155,7 @@ test.describe("Monedas y tasas de cambio (RF-23)", () => {
     await page.goto("/ventas/nueva");
     await page.getByRole("combobox", { name: /moneda del documento/i }).click();
     await page.getByRole("option", { name: /USD/ }).click();
-    await elegir(page, /^cliente/i, "Juan", /Juan Pérez/i);
+    await elegir(page, /^cliente/i, "1002003000", /1002003000/);
     await escanear(page, /^producto/i, "7701234500015");   // taladro: 650.000 COP = 162,50 USD
     await expect(page.getByText(/equivalente en COP/i)).toBeVisible();
     await page.getByRole("button", { name: /registrar venta/i }).click();

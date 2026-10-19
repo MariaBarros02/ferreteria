@@ -90,7 +90,7 @@ export default function CompraNuevaPage() {
           textoAyuda={t('selector.lectorAyuda')} />
         {intentado && !lineas.length && <Typography color="error" role="alert">{t('errores.lineas')}</Typography>}
         {lineas.length > 0 && (
-          <TableContainer sx={{ mt: 2 }}>
+         <TableContainer sx={{ mt: 2, position: 'relative' }}>
             <Table size="small" aria-label={t('compra.lineas')}>
               <TableHead><TableRow>
                 <TableCell>{t('venta.producto')}</TableCell>
