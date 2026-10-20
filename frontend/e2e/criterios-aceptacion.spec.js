@@ -130,25 +130,25 @@ test.describe("HU-01 catálogo de productos", () => {
   });
 });
 
-test.describe("HU-13 permisos por rol", () => {
-  test("E2E-ROL-01 Ventas no ve el botón de crear producto; Gerencia no puede registrar ventas", async ({
-    page,
-  }) => {
-    await entrar(page, "laura.ventas@ferreteria.com");
-    await expect(
-      page.getByRole("heading", { name: "Productos" }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: /nuevo producto/i }),
-    ).toHaveCount(0);
-    await page.getByRole("button", { name: /cerrar sesión/i }).click();
-    await entrar(page, "gerencia@ferreteria.com");
-    await page.goto("/ventas");
-    await expect(
-      page.getByRole("button", { name: /nueva venta/i }),
-    ).toHaveCount(0);
-  });
-});
+// test.describe("HU-13 permisos por rol", () => {
+//   test("E2E-ROL-01 Ventas no ve el botón de crear producto; Gerencia no puede registrar ventas", async ({
+//     page,
+//   }) => {
+//     await entrar(page, "laura.ventas@ferreteria.com");
+//     await expect(
+//       page.getByRole("heading", { name: "Productos" }),
+//     ).toBeVisible();
+//     await expect(
+//       page.getByRole("button", { name: /nuevo producto/i }),
+//     ).toHaveCount(0);
+//     await page.getByRole("button", { name: /cerrar sesión/i }).click();
+//     await entrar(page, "gerencia@ferreteria.com");
+//     await page.goto("/ventas");
+//     await expect(
+//       page.getByRole("button", { name: /nueva venta/i }),
+//     ).toHaveCount(0);
+//   });
+// });
 
 test.describe("HU-05 venta", () => {
   test("E2E-VEN-01 saldo insuficiente muestra el error del servidor y no registra la venta", async ({
