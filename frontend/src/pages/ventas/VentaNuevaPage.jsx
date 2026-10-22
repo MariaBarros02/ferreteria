@@ -148,7 +148,7 @@ export default function VentaNuevaPage() {
               textoAyuda={t('selector.lectorAyuda')} />
             {intentado && validacion.sinLineas && <Typography color="error" role="alert" sx={{ mt: 1 }}>{t('errores.lineas')}</Typography>}
             {lineas.length > 0 && (
-              <TableContainer sx={{ mt: 2 }}>
+              <TableContainer sx={{ mt: 2, position: 'relative' }}>
                 <Table size="small" aria-label={t('venta.lineas')}>
                   <TableHead><TableRow>
                     <TableCell>{t('venta.producto')}</TableCell>

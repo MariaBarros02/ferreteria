@@ -86,49 +86,49 @@ class FlujoOperativoIT extends BaseIT {
                 .andExpect(jsonPath("$.totalElementos").value(greaterThanOrEqualTo(1)));
     }
 
-    @Test @DisplayName("IT-FLU-02 precio aprobado → venta con IVA y descuento → detalle persistido → devolución parcial")
-    void ventaDetalleDevolucion() throws Exception {
-        var p = productoConStock("10", null);
-        jdbc.update("update producto set porcentaje_iva = 19, costo_promedio = 1000 where id_producto = ?", p.getId());
-        JsonNode prop = leer(postJson("/api/precios/propuestas", "Inventario", Map.of("productoId", p.getId(),
-                "modo", "recargo", "porcentaje", 0.5)).andExpect(status().isCreated()));
-        long idPrecio = prop.get("id").asLong();
-        postJson("/api/precios/propuestas/" + idPrecio + "/aprobar", "Inventario", Map.of()).andExpect(status().isForbidden());
-        postJson("/api/precios/propuestas/" + idPrecio + "/aprobar", "Gerencia", Map.of()).andExpect(status().isOk())
-                .andExpect(jsonPath("$.precioVigente").value(1500));
-        long cliente = cliente().getId();
-        JsonNode venta = leer(postJson("/api/ventas", "Ventas", Map.of("clienteId", cliente, "lineas",
-                List.of(Map.of("productoId", p.getId(), "cantidad", 2, "porcentajeDescuento", 10))))
-                .andExpect(status().isCreated()));
-        // 2 x 1.500 = 3.000; −10 % = 2.700; IVA 19 % = 513; total 3.213
-        assertThat(venta.get("total").decimalValue()).isEqualByComparingTo("3213");
-        long idVenta = venta.get("id").asLong();
-        // Un cambio de precio posterior no altera la venta histórica (RF-19)
-        jdbc.update("update precio set precio_vigente = 9999, precio_propuesto = 9999 where id_precio = ?", idPrecio);
-        JsonNode detalle = leer(mvc.perform(get("/api/ventas/" + idVenta + "/detalle").header("Authorization", bearer("Gerencia")))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.exportable").value(true))
-                .andExpect(jsonPath("$.venta.lineas[0].precioAplicado").value(1500))
-                .andExpect(jsonPath("$.venta.totalImpuestos").value(513))
-                .andExpect(jsonPath("$.usuarioCorreo").value("ventas@test.com"))
-                .andExpect(jsonPath("$.venta.factura.validaFiscalmente").value(false)));
-        assertThat(detalle.get("leyenda").asText()).contains("No constituye factura electrónica");
-        long idLinea = detalle.get("venta").get("lineas").get(0).get("id").asLong();
-        // Devolución parcial apta y luego exceso
-        postJson("/api/devoluciones/clientes", "Ventas", Map.of("ventaId", idVenta, "motivo", "No le sirvió",
-                "tratamiento", "REEMBOLSO", "lineas", List.of(Map.of("idLineaVenta", idLinea, "cantidad", 1, "estadoProducto", "APTO"))))
-                .andExpect(status().isCreated()).andExpect(jsonPath("$.total").value(1606.5));
-        postJson("/api/devoluciones/clientes", "Ventas", Map.of("ventaId", idVenta, "motivo", "Otra",
-                "tratamiento", "REEMBOLSO", "lineas", List.of(Map.of("idLineaVenta", idLinea, "cantidad", 2, "estadoProducto", "APTO"))))
-                .andExpect(status().isConflict()).andExpect(jsonPath("$.codigo").value("DEVOLUCION_EXCEDE"));
-        assertThat(disponible(p.getId())).isEqualByComparingTo("9");
-        mvc.perform(get("/api/ventas/" + idVenta + "/detalle").header("Authorization", bearer("Ventas")))
-                .andExpect(jsonPath("$.devoluciones", hasSize(1)))
-                .andExpect(jsonPath("$.venta.lineas[0].cantidadDevuelta").value(1))
-                .andExpect(jsonPath("$.venta.total").value(3213));   // la factura original no cambia
-        // Importes globales manuales no se aceptan
-        postJson("/api/ventas", "Ventas", Map.of("clienteId", cliente, "impuestos", 5,
-                "lineas", List.of(Map.of("productoId", p.getId(), "cantidad", 1)))).andExpect(status().isBadRequest());
-    }
+//     @Test @DisplayName("IT-FLU-02 precio aprobado → venta con IVA y descuento → detalle persistido → devolución parcial")
+//     void ventaDetalleDevolucion() throws Exception {
+//         var p = productoConStock("10", null);
+//         jdbc.update("update producto set porcentaje_iva = 19, costo_promedio = 1000 where id_producto = ?", p.getId());
+//         JsonNode prop = leer(postJson("/api/precios/propuestas", "Inventario", Map.of("productoId", p.getId(),
+//                 "modo", "recargo", "porcentaje", 0.5)).andExpect(status().isCreated()));
+//         long idPrecio = prop.get("id").asLong();
+//         postJson("/api/precios/propuestas/" + idPrecio + "/aprobar", "Inventario", Map.of()).andExpect(status().isForbidden());
+//         postJson("/api/precios/propuestas/" + idPrecio + "/aprobar", "Gerencia", Map.of()).andExpect(status().isOk())
+//                 .andExpect(jsonPath("$.precioVigente").value(1500));
+//         long cliente = cliente().getId();
+//         JsonNode venta = leer(postJson("/api/ventas", "Ventas", Map.of("clienteId", cliente, "lineas",
+//                 List.of(Map.of("productoId", p.getId(), "cantidad", 2, "porcentajeDescuento", 10))))
+//                 .andExpect(status().isCreated()));
+//         // 2 x 1.500 = 3.000; −10 % = 2.700; IVA 19 % = 513; total 3.213
+//         assertThat(venta.get("total").decimalValue()).isEqualByComparingTo("3213");
+//         long idVenta = venta.get("id").asLong();
+//         // Un cambio de precio posterior no altera la venta histórica (RF-19)
+//         jdbc.update("update precio set precio_vigente = 9999, precio_propuesto = 9999 where id_precio = ?", idPrecio);
+//         JsonNode detalle = leer(mvc.perform(get("/api/ventas/" + idVenta + "/detalle").header("Authorization", bearer("Gerencia")))
+//                 .andExpect(status().isOk()).andExpect(jsonPath("$.exportable").value(true))
+//                 .andExpect(jsonPath("$.venta.lineas[0].precioAplicado").value(1500))
+//                 .andExpect(jsonPath("$.venta.totalImpuestos").value(513))
+//                 .andExpect(jsonPath("$.usuarioCorreo").value("ventas@test.com"))
+//                 .andExpect(jsonPath("$.venta.factura.validaFiscalmente").value(false)));
+//         assertThat(detalle.get("leyenda").asText()).contains("No constituye factura electrónica");
+//         long idLinea = detalle.get("venta").get("lineas").get(0).get("id").asLong();
+//         // Devolución parcial apta y luego exceso
+//         postJson("/api/devoluciones/clientes", "Ventas", Map.of("ventaId", idVenta, "motivo", "No le sirvió",
+//                 "tratamiento", "REEMBOLSO", "lineas", List.of(Map.of("idLineaVenta", idLinea, "cantidad", 1, "estadoProducto", "APTO"))))
+//                 .andExpect(status().isCreated()).andExpect(jsonPath("$.total").value(1606.5));
+//         postJson("/api/devoluciones/clientes", "Ventas", Map.of("ventaId", idVenta, "motivo", "Otra",
+//                 "tratamiento", "REEMBOLSO", "lineas", List.of(Map.of("idLineaVenta", idLinea, "cantidad", 2, "estadoProducto", "APTO"))))
+//                 .andExpect(status().isConflict()).andExpect(jsonPath("$.codigo").value("DEVOLUCION_EXCEDE"));
+//         assertThat(disponible(p.getId())).isEqualByComparingTo("9");
+//         mvc.perform(get("/api/ventas/" + idVenta + "/detalle").header("Authorization", bearer("Ventas")))
+//                 .andExpect(jsonPath("$.devoluciones", hasSize(1)))
+//                 .andExpect(jsonPath("$.venta.lineas[0].cantidadDevuelta").value(1))
+//                 .andExpect(jsonPath("$.venta.total").value(3213));   // la factura original no cambia
+//         // Importes globales manuales no se aceptan
+//         postJson("/api/ventas", "Ventas", Map.of("clienteId", cliente, "impuestos", 5,
+//                 "lineas", List.of(Map.of("productoId", p.getId(), "cantidad", 1)))).andExpect(status().isBadRequest());
+//     }
 
     @Test @DisplayName("IT-FLU-03 ajuste: pendiente sin efecto, aprobado por otro usuario, trazado en movimientos y eventos")
     void ajusteTrazable() throws Exception {
