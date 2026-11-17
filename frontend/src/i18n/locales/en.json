@@ -1,5 +1,5 @@
 {
-  "//": "Nombre: en.json | Descripción: English texts | Creación: 2026-10-07 | Actualización: 2026-10-16 | Autor: Equipo Ferretería | Versión: 1.2.0",
+  "//": "Nombre: en.json | Descripción: English texts | Creación: 2026-10-07 | Actualización: 2026-11-17 | Autor: Equipo Ferretería | Versión: 1.3.0",
   "app": {
     "titulo": "Hardware Store Inventory",
     "saltar": "Skip to main content",
@@ -739,5 +739,22 @@
     "equivalenteCop": "COP equivalent",
     "costoCop": "COP cost",
     "politica": "Each document stores the currency and rate it was issued with; changing the rate later does not alter earlier documents."
+  },
+  "asistente": {
+    "titulo": "Virtual assistant",
+    "nombre": "Assistant",
+    "tu": "You",
+    "abrir": "Open the virtual assistant",
+    "cerrar": "Close the assistant",
+    "reiniciar": "New conversation",
+    "menu": "Main menu",
+    "conversacion": "Conversation with the virtual assistant",
+    "opciones": "Suggested topics",
+    "pregunta": "Type your question",
+    "ejemplo": "E.g.: how do I record a sale? or price of the drill",
+    "enviar": "Send question",
+    "escribiendo": "The assistant is typing…",
+    "sinConexion": "The assistant needs an internet connection. Meanwhile you can browse Products with the local copy.",
+    "aviso": "Automatic rule-based answers. Prices and stock are read from the inventory in real time."
   }
 }

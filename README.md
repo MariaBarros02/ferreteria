@@ -2,9 +2,9 @@
   Nombre: README.md
   Descripción: Guía del proyecto: arquitectura, puesta en marcha, módulos, seguridad, pruebas, CI/CD (GitHub Actions y Taiga), métricas y alcance/limitaciones.
   Fecha de creación: 2026-10-07
-  Fecha de actualización: 2026-10-16
+  Fecha de actualización: 2026-11-17
   Autor: Equipo Ferretería
-  Versión: 1.1.0
+  Versión: 1.2.0
 -->
 
 # Sistema de inventario de ferretería
@@ -42,7 +42,7 @@ Usuarios del seed (clave demo `Ferreteria2026*` solo en perfil dev): `laura.vent
 ## Qué implementa
 | Área | Dónde |
 |---|---|
-| Módulos (RF-01 a RF-23) | Productos y presentaciones, terceros, **ventas** con selectores, IVA, descuentos, reservas, lotes FEFO y garantía; **detalle de venta**, **comprobante** imprimible y PDF; **compras** y **recepciones parciales** con lote y vencimiento; inventario por estado, alertas y baja por vencimiento; **precios** con aprobación; **devoluciones** de cliente y a proveedor; **ajustes**; **conteos físicos**; **cierres** mensuales; **auditoría** en la interfaz; **usuarios**; **monedas y tasas de cambio** (COP funcional; ventas y compras en USD, EUR y otras con equivalente en COP); **importación/exportación Excel**; lectores de código; consulta sin conexión. Detalle en [`docs/MODULOS.md`](docs/MODULOS.md). |
+| Módulos (RF-01 a RF-24) | Productos y presentaciones, terceros, **ventas** con selectores, IVA, descuentos, reservas, lotes FEFO y garantía; **detalle de venta**, **comprobante** imprimible y PDF; **compras** y **recepciones parciales** con lote y vencimiento; inventario por estado, alertas y baja por vencimiento; **precios** con aprobación; **devoluciones** de cliente y a proveedor; **ajustes**; **conteos físicos**; **cierres** mensuales; **auditoría** en la interfaz; **usuarios**; **monedas y tasas de cambio** (COP funcional; ventas y compras en USD, EUR y otras con equivalente en COP); **importación/exportación Excel**; lectores de código; consulta sin conexión; **asistente virtual** de soporte (árbol de decisión de preguntas frecuentes y consulta de precio, existencias y tasas). Detalle en [`docs/MODULOS.md`](docs/MODULOS.md) y [`docs/ASISTENTE_VIRTUAL.md`](docs/ASISTENTE_VIRTUAL.md). |
 | Base de datos | Flyway `V1`–`V5` (compatibles con datos existentes, idempotentes); disparadores de inmutabilidad y no borrado; `03_pruebas.sql` (30 pruebas) y `04_verificaciones.sql` (saldo = suma de movimientos, lotes, devoluciones, totales). |
 | Validaciones | Bean Validation en DTO (RN-01, RN-06, longitudes, anti `<>`), `@AssertTrue` entre campos, reglas en servicios y restricciones/disparadores de BD; en el cliente, Yup y validación de líneas. |
 | Seguridad | JWT firmado, BCrypt, roles (RF-09) con `@PreAuthorize` en cada endpoint y menú/rutas por rol, bloqueo por fuerza bruta (429), CORS restringido, CSP/X-Frame/nosniff, errores sin trazas, auditoría sin datos sensibles, costos ocultos a roles sin permiso. |

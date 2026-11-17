@@ -1,10 +1,10 @@
 <!--
   Nombre: MODULOS.md
-  Descripción: Comportamiento implementado de los módulos operativos: arquitectura, monedas y tasas de cambio, ventas y comprobantes, compras y recepción, lotes y vencimientos, precios, devoluciones, ajustes, conteos, reservas, cierres, auditoría, importación/exportación Excel, lectores de código, consulta sin conexión y permisos.
+  Descripción: Comportamiento implementado de los módulos operativos: arquitectura, monedas y tasas de cambio, ventas y comprobantes, compras y recepción, lotes y vencimientos, precios, devoluciones, ajustes, conteos, reservas, cierres, auditoría, importación/exportación Excel, lectores de código, consulta sin conexión, permisos y asistente virtual.
   Fecha de creación: 2026-10-16
-  Fecha de actualización: 2026-10-16
+  Fecha de actualización: 2026-11-17
   Autor: Equipo Ferretería
-  Versión: 1.1.0
+  Versión: 1.2.0
 -->
 
 # Módulos operativos: cómo funcionan
@@ -147,3 +147,13 @@ La API es la autoridad (`@PreAuthorize` por endpoint); el frontend oculta el men
 | Monedas: consultar / registrar tasas y monedas | ✔ / | ✔ / | ✔ / | ✔ / ✔ | ✔ / ✔ |
 
 Gestión de usuarios (`/usuarios`): alta, edición de rol y estado, cambio de contraseña (mínimo 10 caracteres con mayúscula, minúscula y número); el sistema impide dejar sin administradores activos.
+
+## 15. Asistente virtual (RF-24)
+
+- **Acceso:** botón con el ícono de robot en la barra superior, en todas las pantallas con sesión iniciada. Abre un panel lateral (pantalla completa en móvil) que conserva la conversación mientras dura la sesión; *Nueva conversación* la reinicia y al cerrar sesión se descarta.
+- **Motor determinista:** árbol de decisión en `backend/src/main/resources/asistente/base-conocimiento.json` (45 temas en español e inglés). La pregunta se normaliza (minúsculas, sin tildes ni signos, sin palabras vacías, raíces simples) y se clasifica por palabras clave; no hay IA externa ni se envían datos fuera del sistema. La misma pregunta produce siempre la misma respuesta.
+- **Consultas de datos (solo lectura):** un código de barras (8–14 dígitos) o preguntas como "precio del taladro" o "¿cuántos tornillos hay?" muestran el precio vigente y las existencias (máximo 3 productos); "¿a cuánto está el dólar?" o "tasa de cambio" muestran las tasas vigentes. Las preguntas de procedimiento ("¿cómo registro una tasa?") se responden con el tema, sin consultar datos.
+- **Permisos (RF-09):** los temas principales se filtran por rol; si un tema describe una operación que el rol no puede hacer, la respuesta lo indica y no se muestra el enlace. Los enlaces solo apuntan a pantallas permitidas.
+- **Sin conexión:** el asistente avisa que necesita conexión y deshabilita la escritura (la consulta de Productos con la copia local sigue disponible).
+- **API:** `GET /api/asistente/inicio` y `POST /api/asistente/mensajes` (`{ "texto": "…" }` o `{ "nodo": "id-del-tema" }`), cualquier rol autenticado. No se guardan las conversaciones.
+- Detalle del diseño, cómo ampliar la base de conocimiento y pruebas: [`docs/ASISTENTE_VIRTUAL.md`](ASISTENTE_VIRTUAL.md).
