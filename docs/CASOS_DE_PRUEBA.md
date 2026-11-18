@@ -31,7 +31,7 @@ La tabla de casos automatizados se genera con `python3 scripts/listar_casos.py` 
 ## Casos automatizados
 
 <!-- CASOS:INICIO -->
-Total de casos automatizados: **293**.
+Total de casos automatizados: **487**.
 
 ### Unitaria
 
@@ -42,6 +42,42 @@ Total de casos automatizados: **293**.
 | UT-AJU-03 | quien solicita no puede aprobar su propio ajuste | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
 | UT-AJU-04 | una salida mayor al disponible se rechaza (nunca saldo negativo) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
 | UT-AJU-05 | un ajuste rechazado no altera saldos y no puede volver a decidirse | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
+| UT-AJU-06 | la misma clave de operación devuelve el ajuste existente sin crear otro | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
+| UT-AJU-07 | sin clave de operación no se consulta la idempotencia | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
+| UT-AJU-08 | producto, inventario o ajuste inexistentes responden 404 (NO_ENCONTRADO) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
+| UT-AJU-09 | lote inexistente → 404; lote de otro producto → LOTE_INVALIDO; lote propio se acepta | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
+| UT-AJU-10 | movimiento original inexistente → 404; de otro producto → MOVIMIENTO_AJENO; propio se vincula | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
+| UT-AJU-11 | una salida igual al disponible se puede solicitar y aprobar (deja saldo 0, nunca negativo) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
+| UT-AJU-12 | una entrada mayor que el disponible se aprueba (la validación de saldo solo aplica a salidas) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
+| UT-AJU-13 | si el saldo bajó entre la solicitud y la aprobación, la salida se rechaza al aprobar | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
+| UT-AJU-14 | observaciones: en blanco se guardan como null y con texto se recortan | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
+| UT-AJU-15 | la respuesta muestra producto, solicitante, aprobador, fechas y saldo actual | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
+| UT-AJU-16 | rechazar registra quién decide, cuándo y el motivo recortado | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
+| UT-AJU-17 | rechazar un ajuste cuyo producto ya no existe audita solo el motivo | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
+| UT-AJU-18 | el evento de auditoría lleva el detalle del ajuste (producto, tipo, cantidad, motivo, saldo) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
+| UT-AJU-19 | aprobar con lote ajusta ese lote; producto inexistente al aprobar → 404 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
+| UT-AJU-20 | producto por lote: una salida sin lote descuenta del lote; una entrada sin lote no toca lotes | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
+| UT-AJU-21 | obtener y listar: filtros por estado/producto, paginación acotada y número de conteo de origen | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
+| UT-ASI-01 | la base de conocimiento real carga y es válida (aunque el ObjectMapper rechace campos desconocidos) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AsistenteServiceTest.java` |
+| UT-ASI-02 | bienvenida con los temas permitidos para el rol, sin temas ocultos | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AsistenteServiceTest.java` |
+| UT-ASI-03 | bienvenida y títulos en inglés | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AsistenteServiceTest.java` |
+| UT-ASI-04 | pregunta frecuente con enlace a la pantalla y sin aviso de permiso para el rol autorizado | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AsistenteServiceTest.java` |
+| UT-ASI-05 | rol sin permiso: misma explicación, aviso con los roles autorizados y sin enlace | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AsistenteServiceTest.java` |
+| UT-ASI-06 | aviso en singular para un único rol y en inglés | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AsistenteServiceTest.java` |
+| UT-ASI-07 | tema con subtemas: opciones en orden; un tema sin permiso solo informa y oculta su enlace | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AsistenteServiceTest.java` |
+| UT-ASI-08 | el tema elegido tiene prioridad sobre el texto; tema inexistente → 404 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AsistenteServiceTest.java` |
+| UT-ASI-09 | mensaje vacío (nulo, en blanco o tema en blanco) → 422 MENSAJE_VACIO | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AsistenteServiceTest.java` |
+| UT-ASI-10 | saludo y agradecimiento; sin coincidencia se sugieren los temas principales | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AsistenteServiceTest.java` |
+| UT-ASI-11 | empate entre temas → aclaración con las opciones empatadas | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AsistenteServiceTest.java` |
+| UT-ASI-12 | preguntas frecuentes variadas llegan al tema correcto | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AsistenteServiceTest.java` |
+| UT-ASI-13 | código de barras: precio vigente y existencias con formato colombiano | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AsistenteServiceTest.java` |
+| UT-ASI-14 | código inexistente o inactivo → aviso sin error | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AsistenteServiceTest.java` |
+| UT-ASI-15 | búsqueda por nombre: prueba el singular, sin precio, vencido sin baja y bajo el mínimo | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AsistenteServiceTest.java` |
+| UT-ASI-16 | varios resultados: máximo tres, con viñetas y aviso de más coincidencias | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AsistenteServiceTest.java` |
+| UT-ASI-17 | producto inexistente → aviso con la palabra buscada; un término que es tema no se trata como producto | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AsistenteServiceTest.java` |
+| UT-ASI-18 | las preguntas de procedimiento no consultan datos | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AsistenteServiceTest.java` |
+| UT-ASI-19 | tasa del dólar con fecha y fuente, en español y en inglés | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AsistenteServiceTest.java` |
+| UT-ASI-20 | todas las tasas: solo monedas extranjeras activas; sin tasa vigente e inactiva se informan | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AsistenteServiceTest.java` |
 | UT-AUD-01 | el detalle de auditoría nunca guarda contraseñas, tokens ni secretos | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/SoporteServiciosTest.java` |
 | UT-CAL-01 | RF-07: 10 u a $10.000 + 10 u a $14.000 → costo promedio $12.000 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CalculosTest.java` |
 | UT-CAL-02 | RN-07 recargo: $12.000 con 30 % → precio propuesto $15.600 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CalculosTest.java` |
@@ -53,6 +89,20 @@ Total de casos automatizados: **293**.
 | UT-CAL-08 | totales del documento = suma de líneas ya redondeadas | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CalculosTest.java` |
 | UT-CAL-09 | devolución parcial: valor proporcional del total persistido de la línea | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CalculosTest.java` |
 | UT-CAL-10 | promedio sin existencias previas toma el costo de la entrada | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CalculosTest.java` |
+| UT-CIE-01 | resumen de un mes abierto: ventas, devoluciones, compras, movimientos y pendientes | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CierreServiceTest.java` |
+| UT-CIE-02 | ajustes y conteos sin decidir aparecen como bloqueantes con su cantidad | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CierreServiceTest.java` |
+| UT-CIE-03 | el resumen muestra el estado CERRADO o REABIERTO y los datos del cierre | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CierreServiceTest.java` |
+| UT-CIE-04 | la conciliación lista los productos cuyo saldo no coincide con sus movimientos | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CierreServiceTest.java` |
+| UT-CIE-05 | cerrar un mes guarda la constancia completa, exige y limpia la observación si hay diferencias | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CierreServiceTest.java` |
+| UT-CIE-06 | sin diferencias se cierra sin observación; una observación en blanco se guarda vacía | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CierreServiceTest.java` |
+| UT-CIE-07 | con diferencias de conciliación no se cierra sin una observación que las explique | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CierreServiceTest.java` |
+| UT-CIE-08 | con ajustes o conteos pendientes el mes no se cierra | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CierreServiceTest.java` |
+| UT-CIE-09 | un mes futuro no se cierra; el mes en curso sí | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CierreServiceTest.java` |
+| UT-CIE-10 | un mes ya cerrado no se vuelve a cerrar; uno reabierto se re-cierra sobre el mismo registro | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CierreServiceTest.java` |
+| UT-CIE-11 | reabrir deja constancia de quién, cuándo y por qué; solo se reabre un mes cerrado | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CierreServiceTest.java` |
+| UT-CIE-12 | el período debe tener formato AAAA-MM (se toleran espacios) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CierreServiceTest.java` |
+| UT-CIE-13 | el historial lista los cierres del más reciente al más antiguo | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CierreServiceTest.java` |
+| UT-CIE-14 | si el resumen no se puede serializar, el cierre se registra igual sin el JSON | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CierreServiceTest.java` |
 | UT-COM-01 | crear: 3 cajas x 100 = 300 unidades pedidas y costo por unidad base = 15.000 / 100 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
 | UT-COM-02 | proveedor sin rol de proveedor se rechaza | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
 | UT-COM-03 | recepción parcial suma solo lo recibido y recalcula el costo promedio ponderado | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
@@ -64,6 +114,19 @@ Total de casos automatizados: **293**.
 | UT-COM-09 | una compra anulada no admite recepciones | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
 | UT-COM-10 | no se anula una compra con mercancía recibida | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
 | UT-COM-11 | compra en USD: el costo se pacta en USD y el costo base del promedio se guarda en COP | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
+| UT-COM-12 | crear con la misma clave de operación devuelve la compra existente; sin clave no se consulta | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
+| UT-COM-13 | proveedor, producto, compra, línea, documento inexistentes responden 404 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
+| UT-COM-14 | presentación: cantidad y costo de la caja se conservan solo si hubo conversión; observaciones se limpian | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
+| UT-COM-15 | la auditoría de una compra en COP no lleva tasa; en USD lleva tasa, fecha y total en COP | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
+| UT-COM-16 | el reintento de una recepción devuelve el detalle de la compra | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
+| UT-COM-17 | recibir exactamente lo pendiente es válido y deja la compra RECIBIDA | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
+| UT-COM-18 | las líneas se procesan ordenadas por producto (mismo orden de bloqueo, evita interbloqueos) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
+| UT-COM-19 | anular un ingreso revierte cantidades, lote y línea, y registra quién, cuándo y por qué | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
+| UT-COM-20 | anular una compra sin recepciones la deja ANULADA con motivo y fecha | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
+| UT-COM-21 | el detalle muestra producto, proveedor, usuario y las recepciones con su lote | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
+| UT-COM-22 | compras anteriores a V5 (sin moneda ni tasa) se muestran en COP con tasa 1 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
+| UT-COM-23 | estado de recepción: una compra sin líneas está PENDIENTE | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
+| UT-COM-24 | listar: resumen con proveedor y totales, paginación acotada y filtros de la especificación | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/CompraServiceTest.java` |
 | UT-CON-01 | registrar un conteo calcula la diferencia y no modifica el inventario | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
 | UT-CON-02 | aprobar la sesión genera el ajuste por la diferencia con tipo de movimiento conteo | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
 | UT-CON-03 | rechazar la sesión no altera saldos | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/AjusteConteoServiceTest.java` |
@@ -75,6 +138,39 @@ Total de casos automatizados: **293**.
 | UT-DEV-05 | la línea debe pertenecer a la venta indicada | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/DevolucionServiceTest.java` |
 | UT-DEV-06 | la factura original no se modifica (la venta conserva su total y líneas) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/DevolucionServiceTest.java` |
 | UT-DEV-07 | devolución a proveedor desde no apto descuenta el saldo dañado | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/DevolucionServiceTest.java` |
+| UT-DEV-08 | la misma clave de operación devuelve la devolución existente (cliente y proveedor) sin mover saldos | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/DevolucionServiceTest.java` |
+| UT-DEV-09 | sin clave de operación no se consulta la idempotencia | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/DevolucionServiceTest.java` |
+| UT-DEV-10 | venta, compra, línea de compra, producto o devolución inexistentes responden 404 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/DevolucionServiceTest.java` |
+| UT-DEV-11 | devolución de cliente: las líneas se procesan ordenadas por producto (mismo orden de bloqueo) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/DevolucionServiceTest.java` |
+| UT-DEV-12 | devolución a proveedor: las líneas se procesan ordenadas por producto (mismo orden de bloqueo) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/DevolucionServiceTest.java` |
+| UT-DEV-13 | a proveedor se puede devolver exactamente lo recibido, pero no más | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/DevolucionServiceTest.java` |
+| UT-DEV-14 | a proveedor con lote indicado: descuenta del lote según el origen (disponible o no apto) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/DevolucionServiceTest.java` |
+| UT-DEV-15 | a proveedor, producto por lote sin lote indicado: solo se devuelve la existencia sin lote del origen | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/DevolucionServiceTest.java` |
+| UT-DEV-16 | cliente, producto por lote: el lote vigente vuelve a disponible y el lote vencido va a no apto | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/DevolucionServiceTest.java` |
+| UT-DEV-17 | cliente, producto por lote: una devolución parcial usa solo el primer lote necesario | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/DevolucionServiceTest.java` |
+| UT-DEV-18 | cliente, producto por lote: un lote ya devuelto por completo se salta | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/DevolucionServiceTest.java` |
+| UT-DEV-19 | cliente, producto por lote: lo que no salió de un lote se devuelve como existencia sin lote | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/DevolucionServiceTest.java` |
+| UT-DEV-20 | la respuesta de cliente muestra venta, cliente, usuario, fecha, producto y observaciones limpias | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/DevolucionServiceTest.java` |
+| UT-DEV-21 | la respuesta de proveedor muestra compra y proveedor; documentos de origen inexistentes no fallan | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/DevolucionServiceTest.java` |
+| UT-DEV-22 | obtener, devoluciones de una venta, devuelto por línea y listado con filtros | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/DevolucionServiceTest.java` |
+| UT-EXP-01 | productos sin costos: 15 columnas, filas en orden, valores tipados y evento con 2 filas | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ExportacionServiceTest.java` |
+| UT-EXP-02 | productos con costos: agrega costo_promedio como columna 16 y su valor | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ExportacionServiceTest.java` |
+| UT-EXP-03 | productos sin registros: solo encabezado y evento con 0 filas | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ExportacionServiceTest.java` |
+| UT-EXP-04 | existencias sin costos: 13 columnas, alertas unidas y una sola página consultada | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ExportacionServiceTest.java` |
+| UT-EXP-05 | existencias con costos: agrega costo_promedio y valor_inventario | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ExportacionServiceTest.java` |
+| UT-EXP-06 | existencias recorre exactamente totalPaginas (0 y 1) y se detiene | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ExportacionServiceTest.java` |
+| UT-EXP-07 | existencias vacías (0 páginas): solo encabezado y 0 filas | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ExportacionServiceTest.java` |
+| UT-EXP-08 | terceros: columnas, nombre por razón social o nombres, teléfono neutralizado | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ExportacionServiceTest.java` |
+| UT-EXP-09 | terceros vacío: solo encabezado y 0 filas | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ExportacionServiceTest.java` |
+| UT-EXP-10 | ventas: filtros por rango, columnas, fecha ISO, cliente neutralizado y moneda | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ExportacionServiceTest.java` |
+| UT-EXP-11 | ventas recorre las páginas 0 y 1 y no pide la 2 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ExportacionServiceTest.java` |
+| UT-EXP-12 | movimientos: filtros y zona de negocio, columnas y valores (original nulo en blanco) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ExportacionServiceTest.java` |
+| UT-EXP-13 | movimientos recorre las páginas 0 y 1 y no pide la 2 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ExportacionServiceTest.java` |
+| UT-EXP-14 | productos: con MAX_FILAS + 1 registros exporta exactamente MAX_FILAS | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ExportacionServiceTest.java` |
+| UT-EXP-15 | terceros: con MAX_FILAS + 1 registros exporta exactamente MAX_FILAS | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ExportacionServiceTest.java` |
+| UT-EXP-16 | existencias: con r == MAX_FILAS todavía consulta una página más (r <= MAX_FILAS) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ExportacionServiceTest.java` |
+| UT-EXP-17 | ventas: con r == MAX_FILAS todavía consulta una página más (r <= MAX_FILAS) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ExportacionServiceTest.java` |
+| UT-EXP-18 | movimientos: con r == MAX_FILAS todavía consulta una página más (r <= MAX_FILAS) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ExportacionServiceTest.java` |
 | UT-IMP-01 | la validación clasifica cada fila sin importar nada | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ImportacionServiceTest.java` |
 | UT-IMP-02 | faltan columnas obligatorias → 422 con la lista | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ImportacionServiceTest.java` |
 | UT-IMP-03 | un archivo que no es .xlsx válido se rechaza | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ImportacionServiceTest.java` |
@@ -83,10 +179,35 @@ Total de casos automatizados: **293**.
 | UT-IMP-06 | un archivo idéntico ya importado no se vuelve a procesar | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ImportacionServiceTest.java` |
 | UT-IMP-07 | una importación procesada no se confirma de nuevo | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ImportacionServiceTest.java` |
 | UT-IMP-08 | exportación: textos que empiezan por = + - @ se neutralizan (inyección de fórmulas) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ImportacionServiceTest.java` |
+| UT-IMP-09 | plantillas: encabezados, fila de ejemplo e instrucciones según el tipo; tipo inválido se rechaza | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ImportacionServiceTest.java` |
+| UT-IMP-10 | nombre del archivo: sin nombre usa archivo.xlsx, quita rutas y se recorta a 255; se guarda el SHA-256 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ImportacionServiceTest.java` |
+| UT-IMP-11 | límite de filas: 5000 filas de datos se aceptan y 5001 se rechazan | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ImportacionServiceTest.java` |
+| UT-IMP-12 | los valores del archivo se convierten al ProductoRequest (rastreo, SI/NO, números, vacíos a null) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ImportacionServiceTest.java` |
+| UT-IMP-13 | valores inválidos: SI/NO, entero y número se reportan en su columna con un mensaje claro | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ImportacionServiceTest.java` |
+| UT-IMP-14 | los errores de Bean Validation se traducen a la columna del archivo y se ordenan por columna | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ImportacionServiceTest.java` |
+| UT-IMP-15 | confirmar registra la fecha de proceso, guarda el resultado y audita importadas y omitidas | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ImportacionServiceTest.java` |
+| UT-IMP-16 | al confirmar se revalida la unicidad: código o referencia ya existentes se omiten con su motivo | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ImportacionServiceTest.java` |
+| UT-IMP-17 | terceros: válida, duplicado exacto, posibles duplicados (base y archivo) y errores de valor | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ImportacionServiceTest.java` |
+| UT-IMP-18 | confirmar terceros convierte los valores y omite la identificación que ya existe | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ImportacionServiceTest.java` |
+| UT-IMP-19 | cancelar deja la importación CANCELADA con fecha y no se puede cancelar dos veces | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ImportacionServiceTest.java` |
+| UT-IMP-20 | obtener, tipo e historial; una importación inexistente responde 404 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ImportacionServiceTest.java` |
+| UT-IMP-21 | el informe de errores lista solo filas con errores o coincidencias, una fila por error | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ImportacionServiceTest.java` |
 | UT-INV-01 | alertas: lotes vencidos y por vencer se calculan con fechas reales y el umbral | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/SoporteServiciosTest.java` |
 | UT-INV-02 | baja por vencimiento: solo el lote afectado pasa a no apto | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/SoporteServiciosTest.java` |
 | UT-INV-03 | un lote no vencido no se da de baja por vencimiento | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/SoporteServiciosTest.java` |
 | UT-INV-04 | cambio de estado disponible → dañado mueve ambos saldos; reservado no es destino válido | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/SoporteServiciosTest.java` |
+| UT-INV-05 | existencias: saldos, total, valor, precio vigente y alertas AGOTADO / STOCK_BAJO / VENCIDO / POR_VENCER | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/InventarioServiceTest.java` |
+| UT-INV-06 | existencias: filtro recortado y umbral de días acotado entre 0 y 365 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/InventarioServiceTest.java` |
+| UT-INV-07 | alertas: lotes vencidos y por vencer con nombre del producto, agotados activos y stock bajo con saldo | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/InventarioServiceTest.java` |
+| UT-INV-08 | umbral de alertas: sin valor usa el configurado (30); se acota a 0–365 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/InventarioServiceTest.java` |
+| UT-INV-09 | lotes de un producto con su estado según la fecha; producto inexistente → 404 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/InventarioServiceTest.java` |
+| UT-INV-10 | recuperar de no apto a disponible sin lote: mueve saldos, no toca lotes y audita | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/InventarioServiceTest.java` |
+| UT-INV-11 | marcar como dañado sin lote en un producto por lote descuenta de los lotes; saldo exacto es válido | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/InventarioServiceTest.java` |
+| UT-INV-12 | con lote: dañar mueve el saldo del lote (aunque esté vencido); recuperar un lote vencido no se permite | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/InventarioServiceTest.java` |
+| UT-INV-13 | transiciones distintas de disponible↔dañado se rechazan; producto inexistente → 404 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/InventarioServiceTest.java` |
+| UT-INV-14 | baja de lote vencido: con disponible igual al del lote se permite y devuelve el lote actualizado | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/InventarioServiceTest.java` |
+| UT-INV-15 | baja de lote: parte reservada → LOTE_RESERVADO; lote o producto inexistentes → 404 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/InventarioServiceTest.java` |
+| UT-INV-16 | existencias con producto por lote y saldo sobre el mínimo no genera alertas de stock | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/InventarioServiceTest.java` |
 | UT-JWT-01 | genera y valida un token con sujeto y rol | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/JwtServiceTest.java` |
 | UT-JWT-02 | un token expirado se rechaza | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/JwtServiceTest.java` |
 | UT-JWT-03 | un token alterado (payload) se rechaza | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/JwtServiceTest.java` |
@@ -100,6 +221,17 @@ Total de casos automatizados: **293**.
 | UT-LOG-04 | el bloqueo es por correo y no distingue mayúsculas | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/LoginAttemptServiceTest.java` |
 | UT-LOT-01 | un lote existente no puede reingresar con otra fecha de vencimiento | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/SoporteServiciosTest.java` |
 | UT-LOT-02 | salida sin lote indicado: primero existencia sin lote, luego lotes vencidos y FEFO | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/SoporteServiciosTest.java` |
+| UT-MAS-01 | rechaza ids inválidos o repetidos | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/MotorAsistenteTest.java` |
+| UT-MAS-02 | rechaza opciones o temas principales inexistentes, raíz vacía y nodos sin respuesta en español | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/MotorAsistenteTest.java` |
+| UT-MAS-03 | los textos caen al español si falta el idioma y las colecciones nulas quedan vacías | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/MotorAsistenteTest.java` |
+| UT-MAS-04 | normaliza: minúsculas, sin tildes ni signos, espacios simples; nulo → vacío | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/MotorAsistenteTest.java` |
+| UT-MAS-05 | palabras significativas: sin palabras vacías ni repetidas, en orden | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/MotorAsistenteTest.java` |
+| UT-MAS-06 | compara palabras: igual, plural/conjugación cercana o misma raíz; no confunde palabras distintas | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/MotorAsistenteTest.java` |
+| UT-MAS-07 | una frase de dos palabras vence a una palabra suelta; la respuesta es siempre la misma | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/MotorAsistenteTest.java` |
+| UT-MAS-08 | cada frase adicional suma 0,1 y las del otro idioma valen el 80 % | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/MotorAsistenteTest.java` |
+| UT-MAS-09 | empates: se ordenan por la posición en la base; sin palabras útiles no hay resultados | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/MotorAsistenteTest.java` |
+| UT-MAS-10 | temas principales filtrados por rol, hijos en orden y búsqueda por id | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/MotorAsistenteTest.java` |
+| UT-MAS-11 | permisos: roles del nodo, roles propios del enlace y nodos sin enlace | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/MotorAsistenteTest.java` |
 | UT-MON-01 | la moneda funcional (COP) siempre aplica tasa 1 y no requiere tasa registrada | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/MonedaServiceTest.java` |
 | UT-MON-02 | la tasa vigente se consulta con la fecha del negocio (America/Bogota) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/MonedaServiceTest.java` |
 | UT-MON-03 | sin tasa vigente o con la moneda inactiva no se emiten documentos (422) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/MonedaServiceTest.java` |
@@ -113,6 +245,18 @@ Total de casos automatizados: **293**.
 | UT-PRE-05 | una propuesta rechazada no afecta el precio vigente y no se puede aprobar después | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/PrecioServiceTest.java` |
 | UT-PRE-06 | el rechazo exige motivo | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/PrecioServiceTest.java` |
 | UT-PRE-07 | la propuesta automática no se duplica si el precio vigente ya es el calculado | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/PrecioServiceTest.java` |
+| UT-PRE-08 | precio manual sin porcentaje: se calcula el recargo implícito y el motivo se limpia | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/PrecioServiceTest.java` |
+| UT-PRE-09 | recargo implícito: sin costo o costo 0 → 0; precio bajo el costo → 0; tope de 99,9999 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/PrecioServiceTest.java` |
+| UT-PRE-10 | el porcentaje de la solicitud tiene prioridad; modo margen calcula P = C / (1 − m) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/PrecioServiceTest.java` |
+| UT-PRE-11 | sin porcentaje en el producto ni en la solicitud no se calcula (SIN_PORCENTAJE) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/PrecioServiceTest.java` |
+| UT-PRE-12 | producto o propuesta inexistentes responden 404 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/PrecioServiceTest.java` |
+| UT-PRE-13 | propuesta automática: sin porcentaje o sin costo no se propone nada | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/PrecioServiceTest.java` |
+| UT-PRE-14 | propuesta automática: se crea cuando no hay vigente igual ni pendiente con el mismo valor | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/PrecioServiceTest.java` |
+| UT-PRE-15 | propuesta automática: si ya hay una pendiente con el mismo valor no se duplica | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/PrecioServiceTest.java` |
+| UT-PRE-16 | aprobar registra fecha de decisión, correos y el precio anterior en la auditoría | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/PrecioServiceTest.java` |
+| UT-PRE-17 | rechazar registra quién decide, cuándo y el motivo recortado | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/PrecioServiceTest.java` |
+| UT-PRE-18 | historial paginado (página ≥ 0, tamaño 1–100) con correos consultados una sola vez | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/PrecioServiceTest.java` |
+| UT-PRE-19 | consulta por estado: sin estado lista las pendientes; producto inexistente se muestra sin nombre | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/PrecioServiceTest.java` |
 | UT-PRO-01 | crear normaliza espacios y crea saldo inicial en cero | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ProductoServiceTest.java` |
 | UT-PRO-02 | código de barras duplicado se rechaza (RN-01) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ProductoServiceTest.java` |
 | UT-PRO-03 | misma combinación producto+marca+presentación se rechaza (RN-01) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ProductoServiceTest.java` |
@@ -120,6 +264,30 @@ Total de casos automatizados: **293**.
 | UT-PRO-05 | consultar un producto inexistente lanza 404 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ProductoServiceTest.java` |
 | UT-PRO-06 | no se elimina un producto con existencias | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ProductoServiceTest.java` |
 | UT-PRO-07 | conversiones repetidas o iguales a la unidad base se rechazan | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ProductoServiceTest.java` |
+| UT-PRO-08 | crear copia y normaliza todos los campos y audita con la etiqueta y el resumen del producto | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ProductoServiceTest.java` |
+| UT-PRO-09 | sin garantía no se guardan meses; IVA vacío queda en 0; descripción nula se conserva nula | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ProductoServiceTest.java` |
+| UT-PRO-10 | actualizar valida la unicidad, reemplaza todos los campos y audita antes y después | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ProductoServiceTest.java` |
+| UT-PRO-11 | activar y desactivar cambian el estado y lo auditan; repetir el mismo estado no hace nada | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ProductoServiceTest.java` |
+| UT-PRO-12 | obtener por id y por código de barras (con espacios); código inexistente → 404 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ProductoServiceTest.java` |
+| UT-PRO-13 | listar usa el filtro recortado y una cadena vacía cuando no hay filtro | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ProductoServiceTest.java` |
+| UT-PRO-14 | selector: existencias, precio vigente, unidades y vencidos (solo por lote); tamaño acotado a 1–50 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ProductoServiceTest.java` |
+| UT-PRO-15 | catálogo sin conexión: página desde 0, tamaño acotado a 500 y orden por id | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ProductoServiceTest.java` |
+| UT-PRO-16 | selección por código: solo productos activos; inactivo o inexistente → 404 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ProductoServiceTest.java` |
+| UT-PRO-17 | eliminar: con reservado o no apto se rechaza; sin existencias borra conversiones, saldo y producto | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ProductoServiceTest.java` |
+| UT-PRO-18 | eliminar un producto sin registro de inventario no intenta borrar el saldo | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ProductoServiceTest.java` |
+| UT-PRO-19 | configurar unidades reemplaza las conversiones (presentación recortada) y las audita | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ProductoServiceTest.java` |
+| UT-PRO-20 | existencias por estado y precio vigente (nulo si no hay uno aprobado) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ProductoServiceTest.java` |
+| UT-RES-01 | crear: pasa de disponible a reservado, queda ACTIVA y la respuesta trae producto, cliente y usuario | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ReservaServiceTest.java` |
+| UT-RES-02 | se puede reservar exactamente el disponible, pero no más | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ReservaServiceTest.java` |
+| UT-RES-03 | producto por lote: las unidades de lotes vencidos no se pueden reservar | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ReservaServiceTest.java` |
+| UT-RES-04 | la fecha límite puede ser hoy pero no una fecha pasada | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ReservaServiceTest.java` |
+| UT-RES-05 | producto inexistente o inactivo, cliente inexistente o tercero que no es cliente se rechazan | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ReservaServiceTest.java` |
+| UT-RES-06 | cancelar devuelve el reservado a disponible, registra fecha y motivo; solo reservas activas | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ReservaServiceTest.java` |
+| UT-RES-07 | liberar vencidas: solo libera las que siguen activas al bloquearlas y devuelve cuántas | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ReservaServiceTest.java` |
+| UT-RES-08 | identificadores de reservas activas vencidas (para la tarea programada) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ReservaServiceTest.java` |
+| UT-RES-09 | liberar una: solo si existe, está activa, venció y tiene creador; el responsable es quien la creó | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ReservaServiceTest.java` |
+| UT-RES-10 | listar: filtros por estado, producto y cliente; página desde 0 y tamaño 1–100 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ReservaServiceTest.java` |
+| UT-RES-11 | la respuesta tolera producto, cliente o usuario inexistentes | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ReservaServiceTest.java` |
 | UT-TER-01 | crear normaliza campos y limpia los de persona jurídica | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/TerceroServiceTest.java` |
 | UT-TER-02 | rechaza una identificación perteneciente a otro tercero | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/TerceroServiceTest.java` |
 | UT-TER-03 | actualizar permite conservar la identificación propia | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/TerceroServiceTest.java` |
@@ -145,6 +313,14 @@ Total de casos automatizados: **293**.
 | UT-VAL-08 | límite de longitud del nombre (150) en el borde | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ValidacionDtoTest.java` |
 | UT-VAL-09 | venta sin líneas es inválida | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ValidacionDtoTest.java` |
 | UT-VAL-10 | cantidad cero o negativa en línea de venta es inválida | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/ValidacionDtoTest.java` |
+| UT-VCS-01 | detalle completo: cliente, usuario, productos, devuelto por línea, movimientos del documento y leyenda fiscal | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/VentaConsultaServiceTest.java` |
+| UT-VCS-02 | detalle no exportable: sin líneas, sin factura, sin cliente y anulada; leyenda de comprobante interno | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/VentaConsultaServiceTest.java` |
+| UT-VCS-03 | factura sin numeración no es exportable; producto o usuario inexistentes no rompen el detalle | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/VentaConsultaServiceTest.java` |
+| UT-VCS-04 | detalle de una venta inexistente → 404 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/VentaConsultaServiceTest.java` |
+| UT-VCS-05 | datos de la empresa: los valores vacíos o en blanco se devuelven como nulos | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/VentaConsultaServiceTest.java` |
+| UT-VCS-06 | listar: cliente, usuario, numeración, total, moneda y si tiene devoluciones; consultas en caché | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/VentaConsultaServiceTest.java` |
+| UT-VCS-07 | listar acota el tamaño mínimo a 1 | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/VentaConsultaServiceTest.java` |
+| UT-VCS-08 | filtros: número (recortado, en minúsculas y sin comodines), cliente, estado y rango de fechas | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/VentaConsultaServiceTest.java` |
 | UT-VEN-01 | saldo suficiente descuenta una sola vez y emite factura | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/VentaServiceTest.java` |
 | UT-VEN-02 | número interno y numeración fiscal son distintos (RN-14) | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/VentaServiceTest.java` |
 | UT-VEN-03 | saldo insuficiente rechaza con 409 y no modifica inventario ni factura | JUnit 5 + Mockito | `backend/src/test/java/com/ferreteria/inventario/unit/VentaServiceTest.java` |
@@ -171,6 +347,14 @@ Total de casos automatizados: **293**.
 | ID | Caso | Herramienta | Archivo |
 |---|---|---|---|
 | FE-AJU-01 | quien solicitó un ajuste no ve los botones para aprobarlo; otro aprobador sí | Vitest + Testing Library | `frontend/src/__tests__/modulos.test.jsx` |
+| FE-ASI-01 | al abrirse pide la bienvenida una sola vez y muestra los temas como botones | Vitest + Testing Library | `frontend/src/__tests__/asistente.test.jsx` |
+| FE-ASI-02 | envía la pregunta escrita, limpia el campo y muestra la respuesta con su enlace | Vitest + Testing Library | `frontend/src/__tests__/asistente.test.jsx` |
+| FE-ASI-03 | elegir un tema envía su id y muestra su título como mensaje del usuario | Vitest + Testing Library | `frontend/src/__tests__/asistente.test.jsx` |
+| FE-ASI-04 | el enlace navega a la pantalla y cierra el panel | Vitest + Testing Library | `frontend/src/__tests__/asistente.test.jsx` |
+| FE-ASI-05 | error del servidor y falta de conexión se muestran en la conversación | Vitest + Testing Library | `frontend/src/__tests__/asistente.test.jsx` |
+| FE-ASI-06 | sin conexión no pide la bienvenida, avisa y deshabilita la escritura | Vitest + Testing Library | `frontend/src/__tests__/asistente.test.jsx` |
+| FE-ASI-08 | la pregunta se limita a 300 caracteres | Vitest + Testing Library | `frontend/src/__tests__/asistente.test.jsx` |
+| FE-ASI-09 | el botón de la barra superior abre el asistente en cualquier pantalla | Vitest + Testing Library | `frontend/src/__tests__/asistente.test.jsx` |
 | FE-CIE-01 | con pendientes bloqueantes el botón de cierre queda deshabilitado y se listan los motivos | Vitest + Testing Library | `frontend/src/__tests__/modulos.test.jsx` |
 | FE-CMP-01 | muestra la leyenda de comprobante interno y permite imprimir y descargar | Vitest + Testing Library | `frontend/src/__tests__/ventas.test.jsx` |
 | FE-CMP-02 | un documento no exportable bloquea impresión y PDF y explica los motivos | Vitest + Testing Library | `frontend/src/__tests__/ventas.test.jsx` |
@@ -272,6 +456,12 @@ Total de casos automatizados: **293**.
 | IT-ADM-06 | catálogo para consulta sin conexión: paginado y solo productos activos | JUnit 5 + Spring Test (MockMvc) + Testcontainers | `backend/src/test/java/com/ferreteria/inventario/integration/ModulosAdministrativosIT.java` |
 | IT-ADM-07 | migraciones V3/V4: auditoría inmutable y nuevos tipos de movimiento disponibles | JUnit 5 + Spring Test (MockMvc) + Testcontainers | `backend/src/test/java/com/ferreteria/inventario/integration/ModulosAdministrativosIT.java` |
 | IT-ADM-08 | monedas: solo Gerencia/Administración registran tasas; venta en USD guarda importes en USD y equivalente en COP | JUnit 5 + Spring Test (MockMvc) + Testcontainers | `backend/src/test/java/com/ferreteria/inventario/integration/ModulosAdministrativosIT.java` |
+| IT-ASI-01 | sin sesión el asistente responde 401 | JUnit 5 + Spring Test (MockMvc) + Testcontainers | `backend/src/test/java/com/ferreteria/inventario/integration/AsistenteApiIT.java` |
+| IT-ASI-02 | bienvenida con los temas del rol (Ventas no ve Precios; Gerencia sí) | JUnit 5 + Spring Test (MockMvc) + Testcontainers | `backend/src/test/java/com/ferreteria/inventario/integration/AsistenteApiIT.java` |
+| IT-ASI-03 | pregunta frecuente en español con enlace, y en inglés con Accept-Language: en | JUnit 5 + Spring Test (MockMvc) + Testcontainers | `backend/src/test/java/com/ferreteria/inventario/integration/AsistenteApiIT.java` |
+| IT-ASI-04 | rol sin permiso: aviso y sin enlace (Gerencia no registra ventas, RF-09) | JUnit 5 + Spring Test (MockMvc) + Testcontainers | `backend/src/test/java/com/ferreteria/inventario/integration/AsistenteApiIT.java` |
+| IT-ASI-05 | consulta real por código de barras: precio vigente y existencias | JUnit 5 + Spring Test (MockMvc) + Testcontainers | `backend/src/test/java/com/ferreteria/inventario/integration/AsistenteApiIT.java` |
+| IT-ASI-06 | validaciones: mensaje vacío 422, tema inválido 400, < > rechazados 400, tema inexistente 404 | JUnit 5 + Spring Test (MockMvc) + Testcontainers | `backend/src/test/java/com/ferreteria/inventario/integration/AsistenteApiIT.java` |
 | IT-AUT-01 | credenciales correctas devuelven JWT y rol, sin hash | JUnit 5 + Spring Test (MockMvc) + Testcontainers | `backend/src/test/java/com/ferreteria/inventario/integration/AutenticacionIT.java` |
 | IT-AUT-02 | contraseña errónea → 401 con mensaje genérico | JUnit 5 + Spring Test (MockMvc) + Testcontainers | `backend/src/test/java/com/ferreteria/inventario/integration/AutenticacionIT.java` |
 | IT-AUT-03 | usuario inexistente responde igual que contraseña errónea (no enumera cuentas) | JUnit 5 + Spring Test (MockMvc) + Testcontainers | `backend/src/test/java/com/ferreteria/inventario/integration/AutenticacionIT.java` |
@@ -335,6 +525,10 @@ Total de casos automatizados: **293**.
 | ID | Caso | Herramienta | Archivo |
 |---|---|---|---|
 | E2E-A11Y-01 | enlace | Playwright | `frontend/e2e/criterios-aceptacion.spec.js` |
+| E2E-ASI-01 | Ventas pregunta cómo registrar una venta y el enlace la lleva a la pantalla | Playwright | `frontend/e2e/asistente.spec.js` |
+| E2E-ASI-02 | consulta el precio y las existencias de un producto por su código | Playwright | `frontend/e2e/asistente.spec.js` |
+| E2E-ASI-03 | un tema elegido muestra el aviso de permisos para Gerencia y no ofrece el enlace | Playwright | `frontend/e2e/asistente.spec.js` |
+| E2E-ASI-04 | en móvil el panel ocupa la pantalla sin desplazamiento horizontal y se cierra | Playwright | `frontend/e2e/asistente.spec.js` |
 | E2E-AUT-01 | login correcto lleva a productos y logout vuelve al login | Playwright | `frontend/e2e/criterios-aceptacion.spec.js` |
 | E2E-AUT-02 | credenciales inválidas muestran alerta | Playwright | `frontend/e2e/criterios-aceptacion.spec.js` |
 | E2E-AUT-03 | ruta protegida sin sesión redirige al login | Playwright | `frontend/e2e/criterios-aceptacion.spec.js` |

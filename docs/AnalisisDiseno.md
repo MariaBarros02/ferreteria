@@ -2,9 +2,9 @@
   Nombre: 6_analisis_diseno_ferreteria.md
   Descripción: Documento compilado de análisis y diseño: levantamiento v0.3, recomendaciones, levantamiento consolidado, especificación de requisitos y diseño, y scripts de base de datos.
   Fecha de creación: 2026-10-07
-  Fecha de actualización: 2026-10-16
+  Fecha de actualización: 2026-11-17
   Autor: Equipo Ferretería
-  Versión: 1.1.0
+  Versión: 1.2.0
 -->
 
 # Análisis y diseño — Sistema de inventario de ferretería (documento compilado)
@@ -15,6 +15,7 @@
 |---|---|---|
 | 1.0 | 2026-10-07 | Compilación de levantamiento v0.3, recomendaciones, levantamiento consolidado v1.0, especificación de requisitos y diseño v1.0 y scripts de base de datos v1.0. |
 | 1.1 | 2026-10-16 | Auditoría de implementación. Se añaden **RF-18** (detalle de facturas), **RF-19** (previsualizar y exportar facturas), **RF-20** (auditoría en la interfaz), **RF-21** (reservas) y **RF-22** (exportación a Excel), y por solicitud del interesado **RF-23 (monedas y tasas de cambio: COP, USD, EUR y otras)** con la regla **RN-17 (moneda funcional COP)**. La especificación (Parte I y II) se alinea con lo implementado: historias HU-20 a HU-27, casos de uso UC-15 a UC-19, procesos, diccionario de datos, modelo ER, API real, secuencia de venta en moneda extranjera y ADR-08 a ADR-10. Los scripts de base de datos se remiten a las migraciones versionadas `V1`–`V5` del repositorio (sección 6 de los scripts). |
+| 1.2 | 2026-11-17 | Se añade **RF-24 (asistente virtual)**: chatbot de soporte dentro de la plataforma con un motor de reglas determinista (árbol de decisión de preguntas frecuentes) y consultas de solo lectura de precio, existencias y tasas de cambio. Historia HU-28. No requiere migración de base de datos. Detalle en `docs/ASISTENTE_VIRTUAL.md`. |
 
 ## Partes de este documento
 
@@ -2130,6 +2131,27 @@ Ejemplo de unidad base (tornillo, unidad base = unidad; caja = 100, paquete = 10
 | **Requisitos no funcionales** | RNF-02, RNF-03, RNF-06 |
 | **Estado** | Aprobado (solicitud del interesado) — implementado |
 
+### RF-24 — Asistente virtual de soporte (solicitado por el interesado el 2026-11-17)
+
+| Campo | Información |
+|---|---|
+| **Código** | RF-24 |
+| **Versión** | 1.0 |
+| **Descripción** | El sistema deberá ofrecer, desde cualquier pantalla autenticada, un asistente virtual que resuelva las consultas frecuentes sobre el uso de la plataforma mediante un árbol de decisión determinista, y que consulte en solo lectura el precio vigente y las existencias de un producto (por código de barras o nombre) y las tasas de cambio vigentes. |
+| **Justificación** | Reducir la dependencia del Administrador para dudas de uso, acelerar la incorporación de personal nuevo y responder consultas rápidas de mostrador sin salir de la pantalla de trabajo. |
+| **Precondiciones** | Sesión iniciada (cualquier rol) y conexión a internet. |
+| **Restricciones** | Determinista: la misma pregunta produce la misma respuesta; no usa servicios externos de IA ni envía datos fuera del sistema; no registra operaciones ni modifica datos; no guarda el texto de las conversaciones; respeta la matriz de permisos (RF-09): avisa cuando la operación descrita no corresponde al rol y solo enlaza pantallas permitidas; textos en español e inglés; pregunta de máximo 300 caracteres sin `<` ni `>`. |
+| **Prioridad** | Media |
+| **Dependencias** | RF-01, RF-07, RF-09, RF-11, RF-23 |
+| **Actores** | Todos los roles. |
+| **Entradas** | Pregunta en texto libre o tema elegido entre las opciones sugeridas. |
+| **Proceso** | Tema elegido → respuesta del nodo. Texto → código de barras (8–14 dígitos) → producto por código; si no, clasificación por palabras clave (normalización sin tildes, palabras vacías y raíces simples): un tema específico (frase de dos o más palabras) se responde de inmediato; si no, una consulta de dato (precio/existencias o tasa) se resuelve con el inventario o las monedas; si no, el tema más probable, una aclaración ante empates o sugerencias. |
+| **Salida** | Texto de respuesta, temas para continuar y, si el rol puede abrirla, un enlace a la pantalla relacionada. |
+| **Postcondiciones** | Ninguna: el asistente no cambia el estado del sistema. |
+| **Criterios de aceptación** | Ver HU-28. |
+| **Requisitos no funcionales** | RNF-03, RNF-05 |
+| **Estado** | Aprobado (solicitud del interesado) — implementado |
+
 ---
 
 ## 5. Requisitos no funcionales (ISO/IEC 25010:2023)
@@ -2285,6 +2307,7 @@ Gestión de catálogo, compras, recepciones, inventario (disponible/reservado/da
 | RF-21 | Funcional | Gestionar reservas de inventario | Inventario | Media | Propuesto (auditoría 2026-10-16) |
 | RF-22 | Funcional | Exportar información a Excel | Migración | Media | Propuesto (auditoría 2026-10-16) |
 | RF-23 | Funcional | Gestionar monedas y tasas de cambio (COP, USD, EUR y otras) | Ventas/Compras/Finanzas | Alta | Aprobado (solicitud del interesado) |
+| RF-24 | Funcional | Asistente virtual de soporte (preguntas frecuentes y consultas de solo lectura) | Transversal | Media | Aprobado (solicitud del interesado) |
 | RNF-01 | No funcional | Eficiencia de desempeño | Transversal | Alta | Aprobado |
 | RNF-02 | No funcional | Fiabilidad e integridad operativa | Transversal | Alta | Aprobado |
 | RNF-03 | No funcional | Seguridad y trazabilidad | Transversal | Alta | Aprobado |
@@ -2329,6 +2352,7 @@ Formato: *Como \<rol\>, quiero \<funcionalidad\>, para \<beneficio\>.* Criterios
 | HU-25 | Como personal de ventas, quiero vender en dólares u otra moneda activa, para atender clientes que pagan en esa moneda. | RF-23 | **Given** 1 USD = 4.000 COP y un precio vigente de 650.000 COP, **When** registro la venta en USD, **Then** el precio es 162,50 USD, el comprobante muestra la tasa y el equivalente de 650.000 COP, y el inventario se descuenta igual que en COP. **Given** una moneda sin tasa vigente, **When** intento vender, **Then** la venta se rechaza sin tocar el inventario. | Alta |
 | HU-26 | Como personal de compras, quiero registrar una orden de compra en la moneda del proveedor, para pactar el costo tal como lo factura. | RF-23 | **Given** un costo de 2,50 USD y 1 USD = 4.000 COP, **When** registro la compra, **Then** el costo pactado en COP es 10.000 por unidad y alimenta el costo promedio al recibir. | Media |
 | HU-27 | Como usuario de cualquier rol, quiero convertir un monto entre monedas, para informar a un cliente o proveedor. | RF-23 | **Given** tasas vigentes de USD y EUR, **When** convierto 100 USD a EUR, **Then** obtengo el resultado y las tasas usadas. | Baja |
+| HU-28 | Como usuario de cualquier rol, quiero preguntarle a un asistente virtual cómo realizar una tarea o cuál es el precio y las existencias de un producto, para resolver dudas sin salir de la pantalla ni depender del Administrador. | RF-24 | **Given** el rol Ventas, **When** pregunto “¿cómo registro una venta?”, **Then** recibo los pasos y un enlace a Nueva venta. **Given** el rol Gerencia, **When** hago la misma pregunta, **Then** recibo los pasos con el aviso de que la operación corresponde a Ventas y Administrador, sin enlace. **Given** el código 7701234500015, **When** lo escribo, **Then** veo el precio vigente y las existencias del producto. **Given** una pregunta sin coincidencia, **When** la envío, **Then** recibo temas sugeridos. | Media |
 
 ---
 
@@ -2542,6 +2566,7 @@ graph LR
 | RN-03 | RF-21 | HU-06 | UC-05 | RNF-02, RNF-06 |
 | — | RF-22 | HU-23 | UC-19 | RNF-03 |
 | RN-17 | RF-23 | HU-24, HU-25, HU-26, HU-27 | UC-17, UC-18 | RNF-02, RNF-03, RNF-06 |
+| — | RF-24 | HU-28 | — | RNF-03, RNF-05 |
 | RN-12 | — | — | — | RNF-01 |
 
 ---

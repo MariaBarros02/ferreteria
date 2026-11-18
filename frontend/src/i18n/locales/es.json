@@ -1,5 +1,5 @@
 {
-  "//": "Nombre: es.json | Descripción: Textos en español | Creación: 2026-10-07 | Actualización: 2026-10-16 | Autor: Equipo Ferretería | Versión: 1.2.0",
+  "//": "Nombre: es.json | Descripción: Textos en español | Creación: 2026-10-07 | Actualización: 2026-11-17 | Autor: Equipo Ferretería | Versión: 1.3.0",
   "app": {
     "titulo": "Inventario Ferretería",
     "saltar": "Saltar al contenido principal",
@@ -739,5 +739,22 @@
     "equivalenteCop": "Equivalente en COP",
     "costoCop": "Costo COP",
     "politica": "Cada documento guarda la moneda y la tasa con que se emitió; cambiar la tasa después no altera documentos anteriores."
+  },
+  "asistente": {
+    "titulo": "Asistente virtual",
+    "nombre": "Asistente",
+    "tu": "Tú",
+    "abrir": "Abrir el asistente virtual",
+    "cerrar": "Cerrar el asistente",
+    "reiniciar": "Nueva conversación",
+    "menu": "Menú principal",
+    "conversacion": "Conversación con el asistente virtual",
+    "opciones": "Temas sugeridos",
+    "pregunta": "Escribe tu pregunta",
+    "ejemplo": "Ej.: ¿cómo registro una venta? o precio del taladro",
+    "enviar": "Enviar pregunta",
+    "escribiendo": "El asistente está escribiendo…",
+    "sinConexion": "El asistente necesita conexión a internet. Mientras tanto puedes consultar Productos con la copia local.",
+    "aviso": "Respuestas automáticas basadas en reglas. Los precios y existencias se consultan en el inventario en tiempo real."
   }
 }

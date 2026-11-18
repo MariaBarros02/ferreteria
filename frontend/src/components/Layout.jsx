@@ -1,10 +1,10 @@
 /*
  * Nombre: Layout.jsx
- * Descripción: Estructura de página: enlace "saltar al contenido", menú lateral agrupado por módulos y filtrado por rol (permanente en escritorio, desplegable en móvil), idioma, tema, sesión, aviso sin conexión y sincronización del catálogo para consulta offline.
+ * Descripción: Estructura de página: enlace "saltar al contenido", menú lateral agrupado por módulos y filtrado por rol (permanente en escritorio, desplegable en móvil), asistente virtual, idioma, tema, sesión, aviso sin conexión y sincronización del catálogo para consulta offline.
  * Fecha de creación: 2026-10-07
- * Fecha de actualización: 2026-10-16
+ * Fecha de actualización: 2026-11-17
  * Autor: Equipo Ferretería
- * Versión: 1.1.0
+ * Versión: 1.2.0
  */
 import { useEffect, useMemo, useState } from 'react';
 import { Link as RouterLink, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
@@ -27,6 +27,7 @@ import HistoryIcon from '@mui/icons-material/History';
 import LockClockIcon from '@mui/icons-material/LockClock';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../auth/AuthContext';
 import { api } from '../api/http';
@@ -34,6 +35,7 @@ import { cambiarIdioma } from '../i18n';
 import useEnLinea from '../hooks/useEnLinea';
 import { borrarCatalogo, sincronizarCatalogo } from '../offline/catalogo';
 import { puede, puedeImportar } from '../utils/permisos';
+import AsistenteVirtual from './AsistenteVirtual';
 
 const ANCHO = 248;
 
@@ -78,6 +80,7 @@ export default function Layout({ onToggleTema }) {
   const ubicacion = useLocation();
   const enLinea = useEnLinea();
   const [movilAbierto, setMovilAbierto] = useState(false);
+  const [asistenteAbierto, setAsistenteAbierto] = useState(false);
   const grupos = useMemo(() => menuPara(rol), [rol]);
 
   // Copia local del catálogo para consulta sin conexión (RF-12): se refresca al entrar y al recuperar la conexión.
@@ -123,6 +126,12 @@ export default function Layout({ onToggleTema }) {
             sx={{ color: 'inherit', textDecoration: 'none', flexGrow: 1, minWidth: 0 }}>
             {t('app.titulo')}
           </Typography>
+          <Tooltip title={t('asistente.abrir')}>
+            <IconButton color="inherit" aria-label={t('asistente.abrir')} aria-haspopup="dialog" aria-expanded={asistenteAbierto}
+              onClick={() => setAsistenteAbierto(true)}>
+              <SmartToyIcon />
+            </IconButton>
+          </Tooltip>
           <Select size="small" value={i18n.language} onChange={(e) => cambiarIdioma(e.target.value)}
             inputProps={{ 'aria-label': t('app.idioma') }} sx={{ color: 'inherit', '.MuiSvgIcon-root': { color: 'inherit' } }}>
             <MenuItem value="es">ES</MenuItem>
@@ -156,6 +165,7 @@ export default function Layout({ onToggleTema }) {
           <Outlet />
         </Box>
       </Box>
+      <AsistenteVirtual abierto={asistenteAbierto} onCerrar={() => setAsistenteAbierto(false)} />
     </Box>
   );
 }

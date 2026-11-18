@@ -1,0 +1,615 @@
+{
+  "//": "Base de conocimiento del asistente virtual (árbol de decisión determinista). Cada nodo: id, título, respuesta y palabras clave por idioma (es/en), opciones (ids de nodos hijos), roles que pueden realizar la operación (vacío = todos) y enlace opcional a una pantalla de la aplicación (con sus propios roles si difieren de los del nodo). Los nodos 'oculto' no aparecen en los menús. Versión 1.0.0 — 2026-11-17 — Equipo Ferretería.",
+  "version": "1.0.0",
+  "raiz": ["ventas", "compras", "inventario", "precios", "devoluciones", "monedas", "importacion", "cierres-auditoria", "cuenta", "consulta-productos"],
+  "nodos": [
+    {
+      "id": "ventas",
+      "titulo": { "es": "Ventas", "en": "Sales" },
+      "respuesta": {
+        "es": "Esto es lo que puedo explicarte sobre ventas. Elige un tema:",
+        "en": "Here is what I can explain about sales. Pick a topic:"
+      },
+      "claves": { "es": ["ventas", "venta", "vender"], "en": ["sales", "sale", "sell"] },
+      "opciones": ["venta-registrar", "venta-lector", "venta-descuento", "venta-comprobante", "venta-moneda", "venta-saldo", "venta-corregir"],
+      "roles": ["VENTAS", "INVENTARIO", "ADMINISTRADOR", "GERENCIA"],
+      "enlace": { "ruta": "/ventas", "texto": { "es": "Ir a Ventas", "en": "Go to Sales" } }
+    },
+    {
+      "id": "venta-registrar",
+      "titulo": { "es": "¿Cómo registro una venta?", "en": "How do I record a sale?" },
+      "respuesta": {
+        "es": "1. Abre Ventas → Nueva venta.\n2. Busca y elige el cliente (por nombre, identificación o correo).\n3. Agrega los productos con el buscador o con el lector de código de barras.\n4. Ajusta cantidad, presentación y, si aplica, el descuento.\n5. Revisa la vista previa de subtotal, IVA y total.\n6. Pulsa Registrar venta y confirma.\nEl servidor recalcula los importes con el precio vigente aprobado y descuenta el inventario en una sola operación.",
+        "en": "1. Open Sales → New sale.\n2. Search for and pick the customer (by name, ID or e-mail).\n3. Add products with the search box or a barcode scanner.\n4. Adjust quantity, unit and, if needed, the discount.\n5. Check the preview of subtotal, VAT and total.\n6. Press Record sale and confirm.\nThe server recalculates the amounts with the current approved price and updates the stock in a single operation."
+      },
+      "claves": {
+        "es": ["registrar venta", "registro una venta", "hacer una venta", "hago una venta", "como vendo", "nueva venta", "crear venta", "vender un producto", "facturar"],
+        "en": ["record a sale", "new sale", "create sale", "make a sale", "sell a product", "invoice"]
+      },
+      "roles": ["VENTAS", "ADMINISTRADOR"],
+      "enlace": { "ruta": "/ventas/nueva", "texto": { "es": "Abrir Nueva venta", "en": "Open New sale" } }
+    },
+    {
+      "id": "venta-lector",
+      "titulo": { "es": "¿Cómo uso el lector de código de barras?", "en": "How do I use the barcode scanner?" },
+      "respuesta": {
+        "es": "El lector funciona como un teclado: haz clic en el campo Producto y escanea. Al leer el código (y Enter) el producto se agrega; si lo escaneas de nuevo suma una unidad. Si el código no existe o el producto está inactivo, aparece un aviso. Funciona en ventas, compras, conteos y ajustes.",
+        "en": "The scanner works like a keyboard: click the Product field and scan. When the code is read (plus Enter) the product is added; scanning it again adds one more unit. If the code does not exist or the product is inactive you will see a warning. It works in sales, purchases, counts and adjustments."
+      },
+      "claves": {
+        "es": ["lector", "escaner", "escanear", "codigo de barras", "pistola", "qr"],
+        "en": ["scanner", "scan", "barcode", "bar code", "qr"]
+      },
+      "roles": []
+    },
+    {
+      "id": "venta-descuento",
+      "titulo": { "es": "Descuentos e IVA", "en": "Discounts and VAT" },
+      "respuesta": {
+        "es": "Cada línea admite un descuento en porcentaje, con un máximo configurado (10 % por defecto). El IVA es el configurado en cada producto. La pantalla muestra una vista previa, pero el servidor recalcula todo: no se pueden enviar importes manuales.",
+        "en": "Each line accepts a percentage discount, up to a configured maximum (10% by default). VAT is the rate configured for each product. The screen shows a preview, but the server recalculates everything: manual amounts cannot be sent."
+      },
+      "claves": {
+        "es": ["descuento", "descuentos", "iva", "impuesto", "impuestos", "rebaja"],
+        "en": ["discount", "discounts", "vat", "tax", "taxes"]
+      },
+      "roles": ["VENTAS", "ADMINISTRADOR"]
+    },
+    {
+      "id": "venta-comprobante",
+      "titulo": { "es": "Comprobante, PDF y factura electrónica", "en": "Receipt, PDF and e-invoice" },
+      "respuesta": {
+        "es": "Desde el detalle de la venta abre Comprobante para verlo, imprimirlo o descargarlo en PDF.\nImportante: es un comprobante interno de venta. No constituye factura electrónica ni tiene validez fiscal ante la DIAN, porque la aplicación no está integrada con la DIAN.\nEl PDF se bloquea si la venta está anulada, no tiene líneas o faltan datos del cliente.",
+        "en": "From the sale details open Receipt to view, print or download it as PDF.\nImportant: it is an internal sales receipt. It is not an electronic invoice and has no tax validity before the DIAN, because the application is not integrated with the DIAN.\nThe PDF is blocked if the sale is voided, has no lines or the customer data is incomplete."
+      },
+      "claves": {
+        "es": ["comprobante", "pdf", "imprimir", "factura electronica", "dian", "recibo", "descargar comprobante"],
+        "en": ["receipt", "pdf", "print", "electronic invoice", "e-invoice", "dian"]
+      },
+      "roles": ["VENTAS", "INVENTARIO", "ADMINISTRADOR", "GERENCIA"],
+      "enlace": { "ruta": "/ventas", "texto": { "es": "Ver ventas", "en": "View sales" } }
+    },
+    {
+      "id": "venta-moneda",
+      "titulo": { "es": "Vender en dólares u otra moneda", "en": "Sell in dollars or another currency" },
+      "respuesta": {
+        "es": "En Nueva venta elige la moneda del documento (solo aparecen las activas con tasa vigente). El servidor convierte el precio en COP con la tasa del día y guarda también el equivalente en pesos. Si la moneda no tiene tasa vigente la venta se rechaza (SIN_TASA_CAMBIO) sin tocar el inventario: pide a Gerencia o al Administrador que registre la tasa.",
+        "en": "In New sale pick the document currency (only active currencies with a current rate are listed). The server converts the COP price with the day's rate and also stores the peso equivalent. If the currency has no current rate the sale is rejected (SIN_TASA_CAMBIO) without touching the stock: ask Management or the Administrator to record the rate."
+      },
+      "claves": {
+        "es": ["vender en dolares", "venta en dolares", "moneda extranjera", "otra moneda", "venta en usd", "venta en euros", "sin tasa"],
+        "en": ["sell in dollars", "foreign currency", "another currency", "sale in usd", "sale in euros", "no exchange rate"]
+      },
+      "roles": ["VENTAS", "ADMINISTRADOR"],
+      "enlace": { "ruta": "/ventas/nueva", "texto": { "es": "Abrir Nueva venta", "en": "Open New sale" } }
+    },
+    {
+      "id": "venta-saldo",
+      "titulo": { "es": "Error \"saldo insuficiente\"", "en": "\"Insufficient stock\" error" },
+      "respuesta": {
+        "es": "El inventario nunca queda en negativo: si pides más de lo disponible, la venta no se registra. Ten en cuenta que:\n• Lo reservado para otro cliente no se puede vender.\n• Los lotes vencidos no se venden.\n• Lo dañado no se vende.\nRevisa las existencias del producto en Inventario o escríbeme su código o nombre.",
+        "en": "Stock can never go negative: if you request more than what is available, the sale is not recorded. Keep in mind that:\n• Quantities reserved for another customer cannot be sold.\n• Expired lots are not sold.\n• Damaged stock is not sold.\nCheck the product's stock in Inventory, or type its code or name here."
+      },
+      "claves": {
+        "es": ["saldo insuficiente", "no hay suficiente", "no me deja vender", "sin existencias", "inventario insuficiente"],
+        "en": ["insufficient stock", "not enough stock", "cannot sell", "out of stock"]
+      },
+      "roles": [],
+      "enlace": { "ruta": "/inventario", "texto": { "es": "Ver existencias", "en": "View stock" } }
+    },
+    {
+      "id": "venta-corregir",
+      "titulo": { "es": "Corregir o reversar una venta", "en": "Correct or reverse a sale" },
+      "respuesta": {
+        "es": "Una venta registrada no se edita ni se elimina: los documentos se conservan para la auditoría. Si el cliente devuelve productos, registra una devolución de cliente desde el detalle de la venta; el inventario se reintegra y queda un documento de devolución vinculado.",
+        "en": "A recorded sale is never edited or deleted: documents are kept for auditing. If the customer returns products, record a customer return from the sale details; the stock is restored and a linked return document is created."
+      },
+      "claves": {
+        "es": ["corregir venta", "eliminar venta", "borrar venta", "anular venta", "editar venta", "me equivoque", "error en la venta"],
+        "en": ["correct a sale", "delete sale", "void sale", "edit sale", "cancel sale", "wrong sale"]
+      },
+      "opciones": ["devolucion-cliente"],
+      "roles": []
+    },
+
+    {
+      "id": "compras",
+      "titulo": { "es": "Compras", "en": "Purchases" },
+      "respuesta": {
+        "es": "Sobre compras a proveedores puedo explicarte:",
+        "en": "About supplier purchases I can explain:"
+      },
+      "claves": { "es": ["compras", "compra", "proveedor", "proveedores"], "en": ["purchases", "purchase", "supplier", "suppliers"] },
+      "opciones": ["compra-registrar", "compra-recibir", "compra-anular", "devolucion-proveedor"],
+      "roles": ["VENTAS", "COMPRAS", "INVENTARIO", "ADMINISTRADOR", "GERENCIA"],
+      "enlace": { "ruta": "/compras", "texto": { "es": "Ir a Compras", "en": "Go to Purchases" } }
+    },
+    {
+      "id": "compra-registrar",
+      "titulo": { "es": "¿Cómo registro una orden de compra?", "en": "How do I create a purchase order?" },
+      "respuesta": {
+        "es": "1. Abre Compras → Nueva compra.\n2. Elige el proveedor.\n3. Agrega los productos con su cantidad, costo, IVA y descuento.\n4. Si el proveedor factura en otra moneda, elígela: la orden fija la tasa del día.\n5. Guarda la orden.\nLa orden no mueve el inventario: las existencias aumentan cuando registras la recepción.",
+        "en": "1. Open Purchases → New purchase.\n2. Pick the supplier.\n3. Add the products with quantity, cost, VAT and discount.\n4. If the supplier bills in another currency, select it: the order locks the day's rate.\n5. Save the order.\nThe order does not move stock: stock increases when you record the receipt."
+      },
+      "claves": {
+        "es": ["registrar compra", "registro una compra", "orden de compra", "nueva compra", "crear compra", "hacer un pedido al proveedor", "comprar"],
+        "en": ["purchase order", "new purchase", "create purchase", "order from supplier", "buy"]
+      },
+      "roles": ["COMPRAS", "INVENTARIO", "ADMINISTRADOR"],
+      "enlace": { "ruta": "/compras/nueva", "texto": { "es": "Abrir Nueva compra", "en": "Open New purchase" } }
+    },
+    {
+      "id": "compra-recibir",
+      "titulo": { "es": "Recibir mercancía (total o parcial)", "en": "Receive goods (full or partial)" },
+      "respuesta": {
+        "es": "En el detalle de la compra pulsa Registrar recepción:\n• La factura del proveedor es obligatoria.\n• Por cada línea indica la cantidad recibida (no puede superar lo pendiente).\n• Los productos por lote exigen el código del lote y, si vencen, la fecha de vencimiento real.\nCada recepción crea un documento de ingreso (ING-…), suma inventario disponible, recalcula el costo promedio y puede generar una propuesta de precio para aprobación.",
+        "en": "In the purchase details press Record receipt:\n• The supplier invoice is required.\n• For each line enter the quantity received (it cannot exceed what is pending).\n• Lot-tracked products require the lot code and, if they expire, the real expiry date.\nEach receipt creates an entry document (ING-…), adds available stock, recalculates the average cost and may create a price proposal for approval."
+      },
+      "claves": {
+        "es": ["recepcion", "recibir", "recibir mercancia", "llego el pedido", "llego el pedido del proveedor", "llego la mercancia", "ingreso de mercancia", "documento de ingreso", "recepcion parcial"],
+        "en": ["receipt", "receive", "receive goods", "goods arrived", "partial receipt", "entry document"]
+      },
+      "roles": ["COMPRAS", "INVENTARIO", "ADMINISTRADOR"],
+      "enlace": { "ruta": "/compras", "texto": { "es": "Ver compras", "en": "View purchases" } }
+    },
+    {
+      "id": "compra-anular",
+      "titulo": { "es": "Anular una compra o un ingreso", "en": "Void a purchase or an entry" },
+      "respuesta": {
+        "es": "• Anular la compra (Compras o Administrador): solo si no tiene ingresos activos; el motivo es obligatorio.\n• Anular un ingreso (Inventario o Administrador): revierte lo recibido con movimientos vinculados al original; no es posible si esa mercancía ya salió.\nEn ambos casos el documento y su consecutivo se conservan como anulados.",
+        "en": "• Void the purchase (Purchasing or Administrator): only if it has no active entries; a reason is required.\n• Void an entry (Inventory or Administrator): reverses what was received with movements linked to the original; not possible if those goods already left.\nIn both cases the document and its number are kept as voided."
+      },
+      "claves": {
+        "es": ["anular compra", "anular ingreso", "cancelar compra", "reversar recepcion"],
+        "en": ["void purchase", "cancel purchase", "void entry", "reverse receipt"]
+      },
+      "roles": ["COMPRAS", "INVENTARIO", "ADMINISTRADOR"]
+    },
+
+    {
+      "id": "inventario",
+      "titulo": { "es": "Inventario", "en": "Inventory" },
+      "respuesta": {
+        "es": "Sobre el inventario puedo ayudarte con:",
+        "en": "About inventory I can help with:"
+      },
+      "claves": { "es": ["inventario", "existencias", "bodega"], "en": ["inventory", "warehouse"] },
+      "opciones": ["inventario-estados", "inventario-alertas", "inventario-reservas", "inventario-ajustes", "inventario-conteos", "inventario-sin-conexion"],
+      "roles": [],
+      "enlace": { "ruta": "/inventario", "texto": { "es": "Ir a Inventario", "en": "Go to Inventory" } }
+    },
+    {
+      "id": "inventario-estados",
+      "titulo": { "es": "Disponible, reservado y dañado", "en": "Available, reserved and damaged" },
+      "respuesta": {
+        "es": "Cada producto tiene tres saldos: disponible (se puede vender), reservado (apartado para un cliente) y dañado (no apto). Ninguno puede quedar negativo. Inventario o el Administrador pueden mover cantidades entre estados con Cambiar estado, indicando el motivo.",
+        "en": "Each product has three balances: available (can be sold), reserved (set aside for a customer) and damaged (unfit). None can go negative. Inventory staff or the Administrator can move quantities between states with Change state, giving a reason."
+      },
+      "claves": {
+        "es": ["disponible", "reservado", "danado", "estados del inventario", "cambiar estado", "producto danado"],
+        "en": ["available", "reserved", "damaged", "inventory states", "change state", "damaged product"]
+      },
+      "roles": [],
+      "enlace": { "ruta": "/inventario", "texto": { "es": "Ir a Inventario", "en": "Go to Inventory" } }
+    },
+    {
+      "id": "inventario-alertas",
+      "titulo": { "es": "Alertas: vencidos, por vencer y stock bajo", "en": "Alerts: expired, expiring and low stock" },
+      "respuesta": {
+        "es": "En Inventario → Alertas verás los lotes vencidos, los que vencen pronto (30 días por defecto, editable), los productos agotados y los que están bajo el stock mínimo. Inventario o el Administrador pueden dar de baja por vencimiento solo el lote afectado.",
+        "en": "In Inventory → Alerts you will see expired lots, lots expiring soon (30 days by default, editable), out-of-stock products and those below their minimum stock. Inventory staff or the Administrator can write off only the affected lot as expired."
+      },
+      "claves": {
+        "es": ["alertas", "vencido", "vencidos", "por vencer", "vencimiento", "stock minimo", "agotado", "agotados", "lote", "lotes"],
+        "en": ["alerts", "expired", "expiring", "expiry", "minimum stock", "low stock", "lot", "lots"]
+      },
+      "roles": [],
+      "enlace": { "ruta": "/inventario", "texto": { "es": "Ver alertas", "en": "View alerts" } }
+    },
+    {
+      "id": "inventario-reservas",
+      "titulo": { "es": "Reservar productos para un cliente", "en": "Reserve products for a customer" },
+      "respuesta": {
+        "es": "En Inventario → Reservas registra cliente, producto, pedido, cantidad y fecha límite: la cantidad pasa de disponible a reservado. La reserva se libera al venderla al mismo cliente (eligiéndola en la línea de la venta), al cancelarla con motivo o al vencer la fecha límite.",
+        "en": "In Inventory → Reservations enter customer, product, order, quantity and deadline: the quantity moves from available to reserved. The reservation is released when sold to the same customer (selecting it on the sale line), when cancelled with a reason, or when the deadline passes."
+      },
+      "claves": {
+        "es": ["reserva", "reservas", "reservar", "apartar", "separar producto"],
+        "en": ["reservation", "reservations", "reserve", "hold product"]
+      },
+      "roles": ["VENTAS", "ADMINISTRADOR"],
+      "enlace": { "ruta": "/inventario", "texto": { "es": "Ir a Inventario", "en": "Go to Inventory" } }
+    },
+    {
+      "id": "inventario-ajustes",
+      "titulo": { "es": "Ajustes de inventario", "en": "Inventory adjustments" },
+      "respuesta": {
+        "es": "Un ajuste corrige el inventario (entrada o salida) con un motivo:\n1. Inventario o el Administrador lo solicitan.\n2. Queda pendiente, sin afectar el inventario.\n3. Gerencia o el Administrador lo aprueban o rechazan. Debe ser una persona distinta de quien lo solicitó.\nAl aprobarlo se aplica con su movimiento de inventario. Nunca se edita un movimiento existente.",
+        "en": "An adjustment corrects stock (in or out) with a reason:\n1. Inventory staff or the Administrator request it.\n2. It stays pending, without affecting stock.\n3. Management or the Administrator approve or reject it. It must be a different person from the requester.\nOnce approved it is applied with its stock movement. An existing movement is never edited."
+      },
+      "claves": {
+        "es": ["ajuste", "ajustes", "corregir inventario", "ajustar inventario", "faltante", "sobrante"],
+        "en": ["adjustment", "adjustments", "correct stock", "adjust inventory", "shortage", "surplus"]
+      },
+      "roles": ["INVENTARIO", "ADMINISTRADOR", "GERENCIA"],
+      "enlace": { "ruta": "/ajustes", "texto": { "es": "Ir a Ajustes", "en": "Go to Adjustments" } }
+    },
+    {
+      "id": "inventario-conteos",
+      "titulo": { "es": "Conteo físico", "en": "Physical count" },
+      "respuesta": {
+        "es": "1. Inventario o el Administrador abren una sesión de conteo (CF-…).\n2. Registran las cantidades contadas. El conteo es ciego: el saldo del sistema solo se ve al cerrar.\n3. Cierran la sesión.\n4. Otra persona (Gerencia o Administrador) la aprueba o la rechaza.\nAl aprobarla se generan ajustes por cada diferencia. El conteo nunca ajusta el inventario por sí solo.",
+        "en": "1. Inventory staff or the Administrator open a count session (CF-…).\n2. They record the counted quantities. Counting is blind: the system balance is only shown when closing.\n3. They close the session.\n4. Another person (Management or Administrator) approves or rejects it.\nApproval creates adjustments for each difference. A count never adjusts stock by itself."
+      },
+      "claves": {
+        "es": ["conteo", "conteos", "contar", "inventario fisico", "conteo fisico", "toma fisica"],
+        "en": ["count", "counts", "stock count", "physical count", "stocktake"]
+      },
+      "roles": ["INVENTARIO", "ADMINISTRADOR", "GERENCIA"],
+      "enlace": { "ruta": "/conteos", "texto": { "es": "Ir a Conteos", "en": "Go to Counts" } }
+    },
+    {
+      "id": "inventario-sin-conexion",
+      "titulo": { "es": "Trabajar sin conexión", "en": "Working offline" },
+      "respuesta": {
+        "es": "Al iniciar sesión se guarda una copia del catálogo (productos activos con existencias y precio) en tu navegador. Sin conexión puedes consultar Productos con esa copia, pero no registrar operaciones: los botones de registro se deshabilitan y no hay cola de pendientes. Al cerrar sesión la copia se borra. Este asistente necesita conexión.",
+        "en": "When you sign in, a copy of the catalog (active products with stock and price) is saved in your browser. Offline you can browse Products with that copy, but you cannot record operations: record buttons are disabled and there is no pending queue. Signing out deletes the copy. This assistant needs a connection."
+      },
+      "claves": {
+        "es": ["sin conexion", "sin internet", "internet", "offline", "se cayo el internet", "modo sin conexion", "sincronizar"],
+        "en": ["offline", "no internet", "no connection", "sync", "synchronize"]
+      },
+      "roles": [],
+      "enlace": { "ruta": "/productos", "texto": { "es": "Ir a Productos", "en": "Go to Products" } }
+    },
+
+    {
+      "id": "precios",
+      "titulo": { "es": "Precios", "en": "Prices" },
+      "respuesta": {
+        "es": "Los precios de venta siempre pasan por aprobación. ¿Qué quieres saber?",
+        "en": "Selling prices always go through approval. What would you like to know?"
+      },
+      "claves": { "es": ["precios", "lista de precios"], "en": ["prices", "price list"] },
+      "opciones": ["precio-proponer", "precio-aprobar", "precio-sin-aprobar"],
+      "roles": ["INVENTARIO", "ADMINISTRADOR", "GERENCIA"],
+      "enlace": { "ruta": "/precios", "texto": { "es": "Ir a Precios", "en": "Go to Prices" } }
+    },
+    {
+      "id": "precio-proponer",
+      "titulo": { "es": "¿Cómo se propone un precio?", "en": "How is a price proposed?" },
+      "respuesta": {
+        "es": "Inventario o el Administrador proponen el precio con una de estas fórmulas sobre el costo promedio C:\n• Recargo: P = C × (1 + r).\n• Margen: P = C ÷ (1 − m).\n• Manual, con justificación obligatoria.\nLas recepciones de compra también generan propuestas automáticas si el producto tiene recargo configurado. Toda propuesta queda pendiente.",
+        "en": "Inventory staff or the Administrator propose the price with one of these formulas on the average cost C:\n• Markup: P = C × (1 + r).\n• Margin: P = C ÷ (1 − m).\n• Manual, with a mandatory justification.\nPurchase receipts also create automatic proposals when the product has a markup configured. Every proposal stays pending."
+      },
+      "claves": {
+        "es": ["proponer precio", "propongo un precio", "propuesta de precio", "cambiar precio", "nuevo precio", "recargo", "margen", "formula del precio"],
+        "en": ["propose price", "price proposal", "change price", "new price", "markup", "margin", "price formula"]
+      },
+      "roles": ["INVENTARIO", "ADMINISTRADOR"],
+      "enlace": { "ruta": "/precios", "texto": { "es": "Ir a Precios", "en": "Go to Prices" } }
+    },
+    {
+      "id": "precio-aprobar",
+      "titulo": { "es": "¿Quién aprueba los precios?", "en": "Who approves prices?" },
+      "respuesta": {
+        "es": "Solo Gerencia aprueba o rechaza (con motivo) las propuestas, y nunca la suya propia. Al aprobarse, el precio queda vigente de inmediato. El historial de cada producto conserva propuestas, decisiones y fechas de vigencia.",
+        "en": "Only Management approves or rejects (with a reason) proposals, and never its own. Once approved the price takes effect immediately. Each product's history keeps proposals, decisions and effective dates."
+      },
+      "claves": {
+        "es": ["aprobar precio", "aprobacion de precios", "quien aprueba", "rechazar precio", "precio pendiente"],
+        "en": ["approve price", "price approval", "who approves", "reject price", "pending price"]
+      },
+      "roles": ["GERENCIA"],
+      "enlace": { "ruta": "/precios", "texto": { "es": "Ir a Precios", "en": "Go to Prices" } }
+    },
+    {
+      "id": "precio-sin-aprobar",
+      "titulo": { "es": "Un producto no tiene precio", "en": "A product has no price" },
+      "respuesta": {
+        "es": "Un producto sin precio aprobado no se puede vender: la venta usa siempre el precio vigente aprobado por Gerencia. Pide a Inventario que proponga el precio y a Gerencia que lo apruebe.",
+        "en": "A product without an approved price cannot be sold: sales always use the current price approved by Management. Ask Inventory to propose the price and Management to approve it."
+      },
+      "claves": {
+        "es": ["sin precio", "no tiene precio", "precio en cero", "no aparece el precio"],
+        "en": ["no price", "missing price", "price not showing", "zero price"]
+      },
+      "roles": []
+    },
+
+    {
+      "id": "devoluciones",
+      "titulo": { "es": "Devoluciones", "en": "Returns" },
+      "respuesta": {
+        "es": "Hay devoluciones de clientes y devoluciones a proveedores:",
+        "en": "There are customer returns and returns to suppliers:"
+      },
+      "claves": { "es": ["devoluciones", "devolucion", "devolver"], "en": ["returns", "return", "refund"] },
+      "opciones": ["devolucion-cliente", "devolucion-proveedor"],
+      "roles": ["VENTAS", "COMPRAS", "INVENTARIO", "ADMINISTRADOR", "GERENCIA"],
+      "enlace": { "ruta": "/devoluciones", "texto": { "es": "Ir a Devoluciones", "en": "Go to Returns" } }
+    },
+    {
+      "id": "devolucion-cliente",
+      "titulo": { "es": "Devolución de un cliente", "en": "Customer return" },
+      "respuesta": {
+        "es": "1. Abre Devoluciones → Nueva, o el detalle de la venta.\n2. Elige la venta de origen.\n3. Por cada línea indica la cantidad (como máximo lo vendido menos lo ya devuelto) y el estado del producto:\n   • apto: vuelve a disponible;\n   • dañado o vencido: va a dañado.\n4. Indica el motivo y el tratamiento: reembolso, saldo a favor, cambio o ninguno.\nLas devoluciones no se editan ni se eliminan.",
+        "en": "1. Open Returns → New, or the sale details.\n2. Pick the original sale.\n3. For each line enter the quantity (at most what was sold minus what was already returned) and the product condition:\n   • fit: goes back to available;\n   • damaged or expired: goes to damaged.\n4. Enter the reason and the treatment: refund, store credit, exchange or none.\nReturns are never edited or deleted."
+      },
+      "claves": {
+        "es": ["devolucion de cliente", "cliente devuelve", "devolver producto", "reembolso", "saldo a favor", "cambio de producto", "garantia"],
+        "en": ["customer return", "customer returns", "return a product", "refund", "store credit", "exchange", "warranty"]
+      },
+      "roles": ["VENTAS", "INVENTARIO", "ADMINISTRADOR"],
+      "enlace": { "ruta": "/devoluciones/nueva", "texto": { "es": "Nueva devolución", "en": "New return" } }
+    },
+    {
+      "id": "devolucion-proveedor",
+      "titulo": { "es": "Devolución a un proveedor", "en": "Return to a supplier" },
+      "respuesta": {
+        "es": "Desde el detalle de la compra, por cada línea recibida, indica la cantidad a devolver y si sale del saldo disponible o del dañado. Para productos por lote puedes elegir el lote o dejar la asignación automática.",
+        "en": "From the purchase details, for each received line, enter the quantity to return and whether it comes from available or damaged stock. For lot-tracked products you can choose the lot or let it be assigned automatically."
+      },
+      "claves": {
+        "es": ["devolucion a proveedor", "devolver al proveedor", "devolucion proveedor", "nota credito proveedor"],
+        "en": ["supplier return", "return to supplier", "supplier credit note"]
+      },
+      "roles": ["COMPRAS", "INVENTARIO", "ADMINISTRADOR"],
+      "enlace": { "ruta": "/compras", "texto": { "es": "Ver compras", "en": "View purchases" } }
+    },
+
+    {
+      "id": "monedas",
+      "titulo": { "es": "Monedas y tasas de cambio", "en": "Currencies and exchange rates" },
+      "respuesta": {
+        "es": "La moneda funcional es el peso colombiano (COP): inventario, costos, precios y cierres se llevan en pesos. Puedes preguntarme, por ejemplo, \"¿a cuánto está el dólar?\".",
+        "en": "The functional currency is the Colombian peso (COP): stock, costs, prices and closings are kept in pesos. You can ask me, for example, \"what is the dollar rate?\"."
+      },
+      "claves": { "es": ["monedas", "moneda", "divisas"], "en": ["currencies", "currency"] },
+      "opciones": ["moneda-tasa-registrar", "moneda-convertir", "venta-moneda"],
+      "roles": [],
+      "enlace": { "ruta": "/monedas", "texto": { "es": "Ir a Monedas", "en": "Go to Currencies" } }
+    },
+    {
+      "id": "moneda-tasa-registrar",
+      "titulo": { "es": "Registrar una tasa de cambio", "en": "Record an exchange rate" },
+      "respuesta": {
+        "es": "En Monedas, Gerencia o el Administrador registran la tasa: pesos por 1 unidad de la moneda, fecha de vigencia (no futura) y fuente (por ejemplo, TRM del Banco de la República). Las tasas no se editan ni se borran: una corrección es una tasa nueva. La aplicación no consulta la TRM automáticamente.",
+        "en": "In Currencies, Management or the Administrator record the rate: pesos per 1 unit of the currency, effective date (not in the future) and source (for example, the Central Bank TRM). Rates are never edited or deleted: a correction is a new rate. The application does not fetch the TRM automatically."
+      },
+      "claves": {
+        "es": ["registrar tasa", "nueva tasa", "actualizar tasa", "trm", "registrar la tasa de cambio"],
+        "en": ["record rate", "new rate", "update rate", "trm", "record exchange rate"]
+      },
+      "roles": ["GERENCIA", "ADMINISTRADOR"],
+      "enlace": { "ruta": "/monedas", "texto": { "es": "Ir a Monedas", "en": "Go to Currencies" } }
+    },
+    {
+      "id": "moneda-convertir",
+      "titulo": { "es": "Convertir entre monedas", "en": "Convert between currencies" },
+      "respuesta": {
+        "es": "En Monedas usa el conversor: convierte entre dos monedas activas pasando por COP con las tasas vigentes del día. Está disponible para todos los roles.",
+        "en": "In Currencies use the converter: it converts between two active currencies through COP using the day's current rates. It is available to every role."
+      },
+      "claves": {
+        "es": ["convertir", "conversor", "conversion de moneda", "pasar a dolares", "pasar a pesos"],
+        "en": ["convert", "converter", "currency conversion", "to dollars", "to pesos"]
+      },
+      "roles": [],
+      "enlace": { "ruta": "/monedas", "texto": { "es": "Ir a Monedas", "en": "Go to Currencies" } }
+    },
+
+    {
+      "id": "importacion",
+      "titulo": { "es": "Importar y exportar Excel", "en": "Excel import and export" },
+      "respuesta": {
+        "es": "Elige qué necesitas:",
+        "en": "Choose what you need:"
+      },
+      "claves": { "es": ["excel", "importar", "exportar"], "en": ["excel", "import", "export"] },
+      "opciones": ["importacion-pasos", "exportacion"],
+      "roles": [],
+      "enlace": { "ruta": "/importacion", "roles": ["VENTAS", "COMPRAS", "INVENTARIO", "ADMINISTRADOR"], "texto": { "es": "Ir a Importación", "en": "Go to Import" } }
+    },
+    {
+      "id": "importacion-pasos",
+      "titulo": { "es": "¿Cómo importo productos o terceros?", "en": "How do I import products or contacts?" },
+      "respuesta": {
+        "es": "1. En Importación descarga la plantilla del tipo (productos o terceros).\n2. Carga tu archivo .xlsx (máximo 5 MB y 5000 filas). El sistema valida sin importar.\n3. Revisa las filas válidas, con errores y duplicadas. Los posibles duplicados se importan solo si los marcas.\n4. Confirma: se importan solo las filas aprobadas.\nUn archivo idéntico ya importado se rechaza, así que no se duplican datos. Productos: Inventario y Administrador; terceros: Compras, Ventas y Administrador.",
+        "en": "1. In Import download the template for the type (products or contacts).\n2. Upload your .xlsx file (max 5 MB and 5000 rows). The system validates it without importing.\n3. Review the valid, invalid and duplicate rows. Possible duplicates are imported only if you tick them.\n4. Confirm: only the approved rows are imported.\nAn identical file that was already imported is rejected, so data is never duplicated. Products: Inventory and Administrator; contacts: Purchasing, Sales and Administrator."
+      },
+      "claves": {
+        "es": ["importar productos", "importar terceros", "cargar excel", "subir excel", "plantilla", "carga masiva"],
+        "en": ["import products", "import contacts", "upload excel", "template", "bulk upload"]
+      },
+      "roles": ["VENTAS", "COMPRAS", "INVENTARIO", "ADMINISTRADOR"],
+      "enlace": { "ruta": "/importacion", "texto": { "es": "Ir a Importación", "en": "Go to Import" } }
+    },
+    {
+      "id": "exportacion",
+      "titulo": { "es": "Exportar a Excel", "en": "Export to Excel" },
+      "respuesta": {
+        "es": "Los listados de productos, existencias, terceros, ventas y movimientos tienen un botón para exportar a Excel. Se exporta lo mismo que puedes consultar en pantalla (los costos, solo para los roles autorizados), con un máximo de 50 000 filas. Cada exportación queda auditada.",
+        "en": "The product, stock, contact, sales and movement lists have an Export to Excel button. You export the same data you can see on screen (costs only for authorized roles), up to 50,000 rows. Every export is audited."
+      },
+      "claves": {
+        "es": ["exportar a excel", "descargar excel", "exportar", "reporte en excel"],
+        "en": ["export to excel", "download excel", "excel report"]
+      },
+      "roles": []
+    },
+
+    {
+      "id": "cierres-auditoria",
+      "titulo": { "es": "Cierres y auditoría", "en": "Closings and audit" },
+      "respuesta": {
+        "es": "Elige un tema:",
+        "en": "Pick a topic:"
+      },
+      "claves": { "es": ["cierre", "cierres", "auditoria"], "en": ["closing", "closings", "audit"] },
+      "opciones": ["cierre-mensual", "auditoria"],
+      "roles": ["INVENTARIO", "ADMINISTRADOR", "GERENCIA"]
+    },
+    {
+      "id": "cierre-mensual",
+      "titulo": { "es": "Cierre mensual", "en": "Monthly closing" },
+      "respuesta": {
+        "es": "En Cierres, Gerencia revisa el resumen del mes y la conciliación entre inventario y kardex.\n• El cierre se bloquea si hay ajustes pendientes o conteos sin decidir.\n• Si hay diferencias de conciliación, exige observaciones.\n• Un mes cerrado no admite movimientos con fecha en ese mes.\n• La reapertura exige un motivo y queda auditada.",
+        "en": "In Closings, Management reviews the month's summary and the reconciliation between inventory and kardex.\n• Closing is blocked if there are pending adjustments or undecided counts.\n• If there are reconciliation differences, notes are required.\n• A closed month accepts no movements dated in that month.\n• Reopening requires a reason and is audited."
+      },
+      "claves": {
+        "es": ["cierre mensual", "cerrar el mes", "cierre de mes", "reabrir mes", "periodo cerrado", "mes cerrado"],
+        "en": ["monthly closing", "close the month", "month end", "reopen month", "closed period"]
+      },
+      "roles": ["GERENCIA"],
+      "enlace": { "ruta": "/cierres", "texto": { "es": "Ir a Cierres", "en": "Go to Closings" } }
+    },
+    {
+      "id": "auditoria",
+      "titulo": { "es": "Auditoría: quién hizo qué", "en": "Audit: who did what" },
+      "respuesta": {
+        "es": "En Auditoría (Inventario, Administrador y Gerencia) consultas los eventos (fecha, usuario, módulo, acción y detalle del cambio) y los movimientos de inventario, con filtros y exportación a Excel. Los registros son inmutables: no se editan ni se eliminan.",
+        "en": "In Audit (Inventory, Administrator and Management) you can browse events (date, user, module, action and change details) and stock movements, with filters and Excel export. Records are immutable: they are never edited or deleted."
+      },
+      "claves": {
+        "es": ["auditoria", "quien hizo", "historial de cambios", "kardex", "movimientos de inventario", "trazabilidad"],
+        "en": ["audit", "who did", "change history", "kardex", "stock movements", "traceability"]
+      },
+      "roles": ["INVENTARIO", "ADMINISTRADOR", "GERENCIA"],
+      "enlace": { "ruta": "/auditoria", "texto": { "es": "Ir a Auditoría", "en": "Go to Audit" } }
+    },
+
+    {
+      "id": "cuenta",
+      "titulo": { "es": "Mi cuenta y la aplicación", "en": "My account and the app" },
+      "respuesta": {
+        "es": "¿En qué te ayudo con tu cuenta?",
+        "en": "How can I help with your account?"
+      },
+      "claves": { "es": ["cuenta", "usuario", "sesion"], "en": ["account", "user", "session"] },
+      "opciones": ["cuenta-contrasena", "cuenta-bloqueo", "cuenta-sesion", "cuenta-preferencias", "cuenta-permisos", "usuarios-gestion"],
+      "roles": []
+    },
+    {
+      "id": "cuenta-contrasena",
+      "titulo": { "es": "Cambiar u olvidé mi contraseña", "en": "Change or forgot my password" },
+      "respuesta": {
+        "es": "Las contraseñas las gestiona el Administrador en Usuarios: pídele que la cambie. La nueva contraseña debe tener al menos 10 caracteres, con mayúscula, minúscula y número. Nadie, ni siquiera el Administrador, puede ver tu contraseña actual: se guarda cifrada.",
+        "en": "Passwords are managed by the Administrator in Users: ask them to change it. The new password must have at least 10 characters, with an uppercase letter, a lowercase letter and a number. Nobody, not even the Administrator, can see your current password: it is stored encrypted."
+      },
+      "claves": {
+        "es": ["contrasena", "clave", "olvide mi contrasena", "cambiar contrasena", "restablecer contrasena"],
+        "en": ["password", "forgot my password", "change password", "reset password"]
+      },
+      "roles": []
+    },
+    {
+      "id": "cuenta-bloqueo",
+      "titulo": { "es": "Mi cuenta está bloqueada", "en": "My account is locked" },
+      "respuesta": {
+        "es": "Después de 5 intentos de inicio de sesión fallidos la cuenta se bloquea 15 minutos para protegerla. Espera ese tiempo e intenta de nuevo con la contraseña correcta. Si no la recuerdas, pide al Administrador que la cambie.",
+        "en": "After 5 failed sign-in attempts the account is locked for 15 minutes to protect it. Wait that long and try again with the correct password. If you do not remember it, ask the Administrator to change it."
+      },
+      "claves": {
+        "es": ["bloqueada", "bloqueado", "cuenta bloqueada", "no puedo entrar", "intentos fallidos"],
+        "en": ["locked", "account locked", "cannot sign in", "failed attempts"]
+      },
+      "roles": []
+    },
+    {
+      "id": "cuenta-sesion",
+      "titulo": { "es": "La sesión se cierra sola", "en": "My session keeps closing" },
+      "respuesta": {
+        "es": "Por seguridad, la sesión vence después de un tiempo y debes volver a iniciarla. Si marcas \"Mantener sesión\" al entrar, la sesión sobrevive a recargar la página y a abrir pestañas nuevas; si no, se pierde al cerrar la pestaña.",
+        "en": "For security, the session expires after a while and you must sign in again. If you tick \"Keep me signed in\" when signing in, the session survives page reloads and new tabs; otherwise it ends when you close the tab."
+      },
+      "claves": {
+        "es": ["sesion expirada", "se cierra la sesion", "me saca", "mantener sesion", "sesion vencida"],
+        "en": ["session expired", "session closes", "logged out", "keep me signed in"]
+      },
+      "roles": []
+    },
+    {
+      "id": "cuenta-preferencias",
+      "titulo": { "es": "Idioma y tema oscuro", "en": "Language and dark theme" },
+      "respuesta": {
+        "es": "En la barra superior puedes cambiar el idioma (ES/EN) y alternar el tema claro u oscuro. Tus preferencias se conservan al recargar la página.",
+        "en": "In the top bar you can switch the language (ES/EN) and toggle the light or dark theme. Your preferences are kept when you reload the page."
+      },
+      "claves": {
+        "es": ["idioma", "ingles", "tema oscuro", "modo oscuro", "cambiar idioma"],
+        "en": ["language", "spanish", "dark theme", "dark mode", "change language"]
+      },
+      "roles": []
+    },
+    {
+      "id": "cuenta-permisos",
+      "titulo": { "es": "¿Por qué no veo una opción?", "en": "Why can't I see an option?" },
+      "respuesta": {
+        "es": "El menú y los botones dependen de tu rol (Ventas, Compras, Inventario, Administrador o Gerencia), y el servidor también lo verifica. Si necesitas una opción que no ves, pide al Administrador que revise tu rol.",
+        "en": "The menu and buttons depend on your role (Sales, Purchasing, Inventory, Administrator or Management), and the server checks it as well. If you need an option you cannot see, ask the Administrator to review your role."
+      },
+      "claves": {
+        "es": ["permiso", "permisos", "no veo", "acceso denegado", "mi rol", "no aparece la opcion"],
+        "en": ["permission", "permissions", "cannot see", "access denied", "my role"]
+      },
+      "roles": []
+    },
+    {
+      "id": "usuarios-gestion",
+      "titulo": { "es": "Crear usuarios y asignar roles", "en": "Create users and assign roles" },
+      "respuesta": {
+        "es": "En Usuarios, el Administrador crea cuentas, cambia el rol o el estado (activo o inactivo) y restablece contraseñas. El sistema impide dejar la aplicación sin administradores activos.",
+        "en": "In Users, the Administrator creates accounts, changes their role or status (active or inactive) and resets passwords. The system prevents leaving the application without active administrators."
+      },
+      "claves": {
+        "es": ["crear usuario", "nuevo usuario", "asignar rol", "cambiar rol", "desactivar usuario"],
+        "en": ["create user", "new user", "assign role", "change role", "deactivate user"]
+      },
+      "roles": ["ADMINISTRADOR"],
+      "enlace": { "ruta": "/usuarios", "texto": { "es": "Ir a Usuarios", "en": "Go to Users" } }
+    },
+
+    {
+      "id": "consulta-productos",
+      "titulo": { "es": "Consultar precio o existencias de un producto", "en": "Check a product's price or stock" },
+      "respuesta": {
+        "es": "Escríbeme el código de barras (por ejemplo 7701234500015) o pregunta \"precio del taladro\" o \"¿cuántos tornillos hay?\" y te muestro el precio vigente y las existencias.",
+        "en": "Type the barcode (for example 7701234500015) or ask \"price of the drill\" or \"how many screws are in stock?\" and I will show you the current price and stock."
+      },
+      "claves": {
+        "es": ["consultar producto", "buscar producto", "consultar precio", "consultar existencias"],
+        "en": ["check product", "find product", "check price", "check stock"]
+      },
+      "roles": [],
+      "enlace": { "ruta": "/productos", "texto": { "es": "Ir a Productos", "en": "Go to Products" } }
+    },
+
+    {
+      "id": "saludo",
+      "oculto": true,
+      "titulo": { "es": "Saludo", "en": "Greeting" },
+      "respuesta": {
+        "es": "¡Hola! Soy el asistente virtual de la ferretería. Puedo explicarte cómo usar cada módulo y consultar precios y existencias. ¿En qué te ayudo?",
+        "en": "Hi! I am the hardware store's virtual assistant. I can explain how to use each module and check prices and stock. How can I help?"
+      },
+      "claves": {
+        "es": ["hola", "buenos dias", "buenas tardes", "buenas noches", "buenas", "ayuda", "menu", "inicio"],
+        "en": ["hello", "hi", "hey", "good morning", "good afternoon", "help", "menu", "start"]
+      },
+      "opcionesRaiz": true,
+      "roles": []
+    },
+    {
+      "id": "gracias",
+      "oculto": true,
+      "titulo": { "es": "Agradecimiento", "en": "Thanks" },
+      "respuesta": {
+        "es": "¡Con gusto! Si necesitas algo más, aquí estoy.",
+        "en": "You're welcome! If you need anything else, I'm here."
+      },
+      "claves": { "es": ["gracias", "muchas gracias", "listo", "perfecto"], "en": ["thanks", "thank you", "great", "perfect"] },
+      "roles": []
+    }
+  ]
+}

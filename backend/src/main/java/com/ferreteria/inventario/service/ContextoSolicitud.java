@@ -1,10 +1,10 @@
 /*
  * Nombre: ContextoSolicitud.java
- * Descripción: Obtiene el usuario autenticado y la IP de la petición en curso para construir el Actor de cada operación.
+ * Descripción: Obtiene el usuario autenticado, su rol y la IP de la petición en curso para construir el Actor de cada operación.
  * Fecha de creación: 2026-10-16
- * Fecha de actualización: 2026-10-16
+ * Fecha de actualización: 2026-11-17
  * Autor: Equipo Ferretería
- * Versión: 1.0.0
+ * Versión: 1.1.0
  */
 package com.ferreteria.inventario.service;
 
@@ -70,6 +70,20 @@ public class ContextoSolicitud {
         }
         return auth.getAuthorities().stream().map(a -> a.getAuthority())
                 .anyMatch(a -> Arrays.stream(roles).anyMatch(r -> a.equals("ROLE_" + r)));
+    }
+
+    /**
+     * Rol del usuario autenticado, sin el prefijo {@code ROLE_}.
+     *
+     * @return rol normalizado (p. ej. VENTAS) o {@code null} si no hay usuario autenticado
+     */
+    public String rol() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null) {
+            return null;
+        }
+        return auth.getAuthorities().stream().map(a -> a.getAuthority()).filter(a -> a.startsWith("ROLE_"))
+                .map(a -> a.substring("ROLE_".length())).findFirst().orElse(null);
     }
 
     /**

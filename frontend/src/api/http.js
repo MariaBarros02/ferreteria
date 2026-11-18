@@ -2,9 +2,9 @@
  * Nombre: http.js
  * Descripción: Cliente HTTP (Axios): token Bearer, idioma Accept-Language, bloqueo de escrituras sin conexión (RN-10), manejo de 401 y funciones de todos los módulos de la API.
  * Fecha de creación: 2026-10-07
- * Fecha de actualización: 2026-10-16
+ * Fecha de actualización: 2026-11-17
  * Autor: Equipo Ferretería
- * Versión: 1.1.0
+ * Versión: 1.2.0
  */
 import axios from 'axios';
 import i18n from '../i18n';
@@ -187,4 +187,8 @@ export const api = {
   },
   exportar: (que, params) => descargar(`/api/exportaciones/${que}`, params, `${que}.xlsx`),
   catalogo: (pagina, tamano = 500) => get('/api/catalogo/sincronizacion', { pagina, tamano }),
+  asistente: {
+    inicio: () => get('/api/asistente/inicio'),
+    enviar: (d) => post('/api/asistente/mensajes', d),
+  },
 };
